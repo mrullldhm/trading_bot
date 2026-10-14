@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from propfirm_data import crosscheck as cc
 
@@ -61,7 +62,8 @@ def test_compare_counts_exact_one_tick_missing_and_extra():
     assert s["ohlc_exact_pct"] == 50.0
     assert s["ohlc_within_1_tick_pct"] == 100.0
     assert s["max_diff_ticks"] == 1
-    assert s["coverage_pct"] == round(100 * 2 / 3, 3)
+    assert s["databento_match_pct"] == round(100 * 2 / 3, 3)
+    assert s["massive_match_pct"] == round(100 * 2 / 3, 3)
 
 
 def test_volume_difference_detected():
@@ -82,5 +84,39 @@ def test_window_drops_recent_bars_inside_free_tier_delay():
 
 
 def test_verdict_thresholds():
-    assert cc.verdict({"ohlc_exact_pct": 99.5, "coverage_pct": 99.9}) == "PASS"
-    assert cc.verdict({"ohlc_exact_pct": 98.0, "coverage_pct": 99.9}) == "WARN"
+    good = {"ohlc_exact_pct": 99.5, "databento_match_pct": 99.9, "massive_match_pct": 99.9}
+    assert cc.verdict(good) == "PASS"
+    assert cc.verdict({**good, "ohlc_exact_pct": 98.0}) == "WARN"
+    assert cc.verdict({**good, "massive_match_pct": 90.0}) == "WARN"
+
+
+def test_massive_bars_on_days_contract_left_v0_v1_are_ignored():
+    # Databento has CLM5 on Tue 2025-01-21 and Tue 2025-03-25 only (it left the v.0/v.1 pair in between).
+    db = pd.concat([bars(["2025-01-21 15:00"], [7000], sym="CLM5", cont="CL.v.1"),
+                    bars(["2025-03-25 15:00"], [7100], sym="CLM5", cont="CL.v.0")])
+    ms = bars(["2025-01-21 15:00", "2025-02-20 15:00", "2025-03-25 15:00"], [7000, 6900, 7100], sym="CLM5")
+    m = cc.compare(db, ms)
+    assert len(m) == 2 and (m["side"] == "both").all()  # Feb bar dropped, not counted massive_only
+    assert sorted(m["continuous_symbol"]) == ["CL.v.0", "CL.v.1"]  # labelled per day
+
+
+def test_massive_only_bar_gets_that_days_symbol():
+    db = bars(["2025-03-25 15:00"], [7100], sym="CLM5", cont="CL.v.0")
+    ms = bars(["2025-03-25 15:00", "2025-03-25 15:07"], [7100, 7101], sym="CLM5")
+    m = cc.compare(db, ms)
+    extra = m[m["side"] == "massive_only"]
+    assert len(extra) == 1 and extra.iloc[0]["continuous_symbol"] == "CL.v.0"
+
+
+def test_daily_agreement_uses_all_bars_of_each_vendor():
+    # Massive misses the minute holding the daily high: daily high must NOT be reported exact.
+    db = bars(T, [9000, 9050, 9001])
+    ms = bars([T[0], T[2]], [9000, 9001])
+    m = cc.add_labels(cc.compare(db, ms), set())
+    assert cc.daily_agreement(m)["daily_high_exact_pct"] == 0.0
+
+
+@pytest.mark.parametrize("url", ["http://api.massive.com/x", "https://evil.example/x", "https://api.massive.com.evil.io/x"])
+def test_key_never_sent_off_host(url):
+    with pytest.raises(RuntimeError):
+        cc._check_url(url)

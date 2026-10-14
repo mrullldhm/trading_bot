@@ -18,21 +18,21 @@ Downloads 1-minute CL (crude oil) bars from Databento, 2010 → today, for backt
 
 Prices are **not adjusted**. When `CL.v.0` switches to the next contract, the price **jumps** even though the market did not move.
 
-**Example:** 18 May 2026, `CL.v.0` switched CLM6 → CLN6 and jumped **−417 ticks** (a fake −$4,170 on 1 contract, more than double a 50K account's $2,000 loss limit). That is the price gap between two different contracts, **not** a market move. **A backtest must never count it as profit or loss.**
+**Example:** 18 May 2026, `CL.v.0` switched CLM6 → CLN6 and jumped **−417 ticks** (a fake −$4,170 on 1 contract, more than double a 50K account's $2,000 loss limit). No real position experienced that jump. It comes from gluing two different contracts together. **A backtest must never count it as profit or loss.**
 
-Find the roll bars like this:
+Find the roll bars like this (for analysis only; you only see a roll **after** it happens, so this is not a live exit signal):
 
 ```python
 from propfirm_data.convert import load_bars
 
 bars = load_bars()
 front = bars[bars["continuous_symbol"] == "CL.v.0"].sort_values("ts_event_utc")
-front["is_roll"] = front["raw_symbol"] != front["raw_symbol"].shift()
-front.loc[front.index[0], "is_roll"] = False  # first bar is not a roll
+prev = front["raw_symbol"].shift()
+front["is_roll"] = prev.notna() & (front["raw_symbol"] != prev)  # first bar is never a roll
 print(front[front["is_roll"]][["ts_event_utc", "raw_symbol", "open"]])
 ```
 
-Rules: never hold a trade across `is_roll`; entry and exit must have the same `raw_symbol`; reset indicators at the roll. Full explanation: `TRADING_BOT_GUIDE.md` → Phase 3 → "Roll days".
+Rolls in this data happen mostly at 00:00 UTC (6–7 PM Chicago), the rest at a session reopen (22:00/23:00 UTC) plus one old 01:15 UTC exception; never during US daytime. Rules: a daytime strategy flat by Topstep's 3:10 PM CT cutoff never crosses a roll; evening trades must be flat before 00:00 UTC; make the backtest crash if a trade's entry and exit have different `raw_symbol`; reset indicators on roll days. Full explanation: `TRADING_BOT_GUIDE.md` → Phase 3 → "Roll days".
 
 ## Steps
 

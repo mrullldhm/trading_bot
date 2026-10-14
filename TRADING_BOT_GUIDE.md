@@ -389,19 +389,23 @@ Each phase has a **goal**, **tasks**, and a **"done when"** checklist. Do not sk
 
 Your data series `CL.v.0` is not one contract. It is a **chain of monthly contracts glued together**. About 12 times a year it switches from the expiring contract to the next one. The two contracts trade at different prices, so the series **jumps** at the switch, even though the market did not move.
 
-**Real example from our data:** on **18 May 2026**, `CL.v.0` switched from **CLM6** (June 2026) to **CLN6** (July 2026). The price jumped **−417 ticks**. On 1 CL contract that looks like a **−$4,170 loss**. It is not real. Nobody lost or made that money. It is just the price difference between June oil and July oil.
+**Real example from our data:** on **18 May 2026**, `CL.v.0` switched from **CLM6** (June 2026) to **CLN6** (July 2026). The series jumped **−417 ticks** from the last CLM6 bar to the first CLN6 bar. On 1 CL contract that looks like a **−$4,170 loss**. No real position ever experienced it. It is a **fake jump made by gluing two different contracts together**: mostly the price difference between June oil and July oil, plus whatever the market did between those two bars.
 
-Think of it like comparing the price of a June concert ticket with a July concert ticket. They are different products, so their price difference tells you nothing about how the market moved.
+Think of it like comparing the price of a June concert ticket with a July concert ticket. They are different products, so their price difference tells you nothing about how the market moved. (To see the real June–July gap, compare both contracts **at the same minute**. Our data has both: `CL.v.0` and `CL.v.1`.)
 
 **Why it is dangerous:** a single fake −$4,170 jump is twice the whole $2,000 loss limit of a 50K account. If your backtest counts it, the results are garbage: fake blow-ups, or fake big wins if the jump goes your way.
 
 **Rules your backtest must follow:**
 
-1. **Never hold a position across a contract change.** If a trade is open and the next bar has a different `raw_symbol`, close the trade on the **last bar of the old contract**. (Topstep makes you flat every day anyway, so in practice: never enter on the old contract and exit on the new one.)
-2. **Calculate profit/loss only within one contract:** entry and exit must have the **same `raw_symbol`**.
-3. **Indicators** (moving averages, VWAP, ATR) that look back across a roll are distorted by the jump. Either reset them at the roll, or use a back-adjusted series **for indicators only**. Never use adjusted prices for fills or P&L.
-4. **Detect a roll** in code: the bar's `raw_symbol` is different from the previous bar's `raw_symbol`.
-5. **Add a test:** feed the backtest a fake roll with a huge jump and check that P&L is unchanged.
+1. **Know when rolls happen.** In our data, `CL.v.0` rolls happen mostly at **00:00 UTC** (6–7 PM Chicago, in the evening); the rest at a session reopen (22:00 or 23:00 UTC), plus one old exception at 01:15 UTC. **None during US daytime.** The choice uses the **previous day's volume**, so it is known in advance, with no peeking into the future.
+2. **Daytime strategies are safe automatically.** If you only trade US hours (e.g. 8:00 AM–1:30 PM ET) and are flat by Topstep's 3:10 PM CT cutoff, a trade can never cross a roll.
+   - If you ever trade the **evening** session (5 PM–midnight UTC), you must flatten before 00:00 UTC, or trade the next contract from the session start (its bars are in `CL.v.1` before the roll).
+3. **Safety check:** entry and exit of every trade must have the **same `raw_symbol`**. Make the backtest **crash** if they don't. That means there is a bug.
+4. **Indicators** (moving averages, VWAP, ATR) that look back across a roll are distorted by the jump. Either reset them on the roll day, or use a back-adjusted series **for indicators only**. Never use adjusted prices for fills or P&L.
+5. **Detect a roll** (for analysis): the bar's `raw_symbol` is different from the previous bar's `raw_symbol`. Note: you only learn this **after** the new bar appears, so it is not a live exit signal. Use rule 1 instead.
+6. **Add a test:** feed the backtest a fake roll with a huge jump and check that P&L is unchanged.
+
+**Live bot:** a live bot trades one **specific contract** (e.g. `CLN6`), not `CL.v.0`. It needs its own roll rule: switch to the next contract on a fixed schedule, e.g. a few days before expiry or when the next contract's daily volume is higher, decided before the session opens.
 
 ### Phase 4 — Robustness testing
 
@@ -644,7 +648,7 @@ Two AI assistants are like **an author and an editor**. One writes, the other ch
 | **Overfitting** — tuning until the backtest looks perfect | Fits past noise; fails on new data | Few rules, few parameters, out-of-sample + walk-forward tests |
 | **Look-ahead bias** — using a bar's close before the bar closed | Backtest looks amazing, live loses | Only act on completed bars; enter on the next bar |
 | **Ignoring costs and slippage** | Thin "edges" disappear | Always include fees + slippage; stress test +1 tick |
-| **Rollover gaps** in continuous data | Fake profits or losses at the roll. Example: 18 May 2026, CLM6 → CLN6 = −417 ticks = a fake −$4,170 per contract | Never hold across a `raw_symbol` change; P&L only within one contract (see Phase 3 "Roll days") |
+| **Rollover gaps** in continuous data | Fake profits or losses at the roll. Example: 18 May 2026, CLM6 → CLN6 = −417 ticks = a fake −$4,170 per contract | Daytime trading + flat by 3:10 PM CT never crosses a roll (rolls happen in the evening, mostly 00:00 UTC); crash the backtest if entry and exit `raw_symbol` differ (see Phase 3 "Roll days") |
 | **Sizing from $50K instead of $2K** | Account blows up in a few losses | Size from the MLL (Section 11) |
 | **Believing a stop guarantees its price** | Oil gaps through stops on news | Smaller size, news blocks, stress slippage |
 | **Confusing EOD trailing with intraday trailing** | Wrong safety margin | Model the trailing MLL exactly, verify with Topstep |
