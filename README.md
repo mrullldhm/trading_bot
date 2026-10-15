@@ -4,7 +4,7 @@ The foundation for a planned automated trading bot for a **Topstep** prop-firm a
 
 Right now it **downloads, converts, validates, and cross-checks** CL historical data. Strategy, backtesting, and live-trading code come next.
 
-> **Status:** Phase 2 of 7 done (historical data pipeline built, validated, cross-checked). No strategy or live-trading code yet.
+> **Status:** Data pipeline and backtester done. Strategy 1 (EMA x VWAP) tested and **failed**. See [Strategy results](#strategy-results). No live-trading code yet.
 >
 > **Not financial advice.** Most trading strategies lose money. This project is a learning build with heavy safety checks, not a promise of profit.
 
@@ -21,10 +21,11 @@ Right now it **downloads, converts, validates, and cross-checks** CL historical 
 7. [Important: roll days](#important-roll-days)
 8. [Safety rules](#safety-rules)
 9. [How Claude and Codex work together](#how-claude-and-codex-work-together)
-10. [Troubleshooting](#troubleshooting)
-11. [Documents](#documents)
-12. [Contributing](#contributing)
-13. [License](#license)
+10. [Strategy results](#strategy-results)
+11. [Troubleshooting](#troubleshooting)
+12. [Documents](#documents)
+13. [Contributing](#contributing)
+14. [License](#license)
 
 ---
 
@@ -50,10 +51,10 @@ The roadmap comes from [TRADING_BOT_GUIDE.md, Section 8](TRADING_BOT_GUIDE.md#8-
 | Phase | What | Status |
 |---|---|---|
 | 0 | Learn and set up | ✅ Done |
-| 1 | Write the strategy in plain words | ⬜ Next |
-| 2 | Get data and handle rollover | ✅ Done: downloaded, validated, cross-checked (see [results](#data-quality-results)) |
-| 3 | Backtest with real costs | ⬜ |
-| 4 | Robustness testing (out-of-sample, walk-forward, Monte Carlo) | ⬜ |
+| 1 | Write the strategy in plain words | 🔁 Strategy 1 (EMA x VWAP) written and tested. **Failed.** Next: strategy 2 |
+| 2 | Get data and handle rollover | ✅ Done: downloaded, validated, cross-checked against Massive (Databento confirmed correct, see [results](#data-quality-results)) |
+| 3 | Backtest with real costs | ✅ Backtester built (`propfirm_backtest/`), verified independently by Codex |
+| 4 | Robustness testing (out-of-sample, walk-forward, Monte Carlo) | ✅ Built in: holdout, walk-forward, bootstrap Combine simulation, slippage stress |
 | 5 | Practice account, 4+ weeks | ⬜ |
 | 6 | Trading Combine | ⬜ |
 | 7 | Express Funded and beyond | ⬜ |
@@ -120,6 +121,13 @@ propfirm/
 │   ├── convert.py            ← raw files → clean Parquet tables; load_bars()
 │   ├── validate.py           ← data-quality checks
 │   └── crosscheck.py         ← compare Databento with Massive
+├── propfirm_backtest/        ← backtester (numba-compiled)
+│   ├── bars.py               ← contracts, sessions, timeframe bars, roll schedule
+│   ├── indicators.py         ← EMA, anchored VWAP
+│   ├── engine.py             ← trade simulator (1-minute fill ordering, stops, cutoffs)
+│   ├── propsim.py            ← Topstep Combine simulator + trade metrics
+│   ├── search.py             ← step 1: grid search on 2010-2021 only, freezes picks
+│   └── holdout.py            ← step 2: tests the picks ONCE on 2022-today
 ├── tests/                    ← automatic tests (no internet needed)
 └── data/                     ← downloaded data (never committed, ~360 MB)
     ├── raw/                  ← original Databento files: raw/{bars,definitions}/<job-id>/*.dbn.zst
@@ -181,7 +189,11 @@ front = bars[bars["continuous_symbol"] == "CL.v.0"]  # front contract only
 | Contract rolls | 196 in 16.3 years (≈12/year, as expected) |
 | Cross-check vs Massive (Oct 2024 → Oct 2026, CL.v.0) | 99.9% of bars in both vendors · open/high/low exact on 99.93–99.99% · volume exact 99.6% · **close exact 98.2%** (median diff 1 tick) |
 
-**Cross-check verdict: WARN, explained.** Both vendors have the same trades: volume and open/high/low match almost perfectly. The only real difference is the **close** on ~1.8% of bars, usually by 1 tick. The likely cause: when several trades print in the same instant, the two vendors pick a different one as "last" (not yet proven; checking Databento's individual trades for a few of these minutes would settle it for ~$0.01). This does not affect strategy logic much, but a backtest should **not depend on exact 1-minute closes** (e.g. "enter if close = X exactly"). Full report: `data/crosscheck/report.md` (local only).
+**Cross-check verdict: WARN, resolved: Databento is correct.** Both vendors have the same trades: volume and open/high/low match almost perfectly. The only real difference is the **close** on ~1.8% of bars, usually by 1 tick.
+
+We checked the individual trades (Databento `trades` schema, $0.01) for the 4 worst minutes. In **all 4**, Databento's close equals the true last trade; Massive's does not. The cause: one large order hits several price levels in the **same instant** (e.g. fills at 98.82, 98.86, 98.87, 98.88, all with one exchange timestamp and sequence number). The exchange reports them in order, so the last fill (98.88) is the true close. Databento follows exchange order; Massive picks a different price. In one minute Massive also missed trades (volume 1,376 vs 1,540 actual).
+
+Lesson for backtesting: different data vendors can disagree on 1-minute closes, so a strategy should **not depend on an exact 1-minute close** (e.g. "enter only if close = X exactly"). Full report: `data/crosscheck/report.md` (local only).
 
 ---
 
@@ -194,6 +206,8 @@ front = bars[bars["continuous_symbol"] == "CL.v.0"]  # front contract only
 | `python -m propfirm_data.download --yes --max-budget 50` | Same, with a lower spending cap | Yes, once |
 | `python -m propfirm_data.validate` | Data-quality report, exits with an error if data is broken | No |
 | `python -m propfirm_data.crosscheck` | Compares the last 2 years with Massive | No (free tier) |
+| `python -m propfirm_backtest.search` | Strategy grid search on 2010-2021 (~5 min), freezes picks | No |
+| `python -m propfirm_backtest.holdout` | Tests frozen picks on 2022-today. **Runs once only** | No |
 | `python -m pytest -q` | Runs all automatic tests | No |
 
 If downloading or converting is interrupted, re-running `download --yes` resumes the recorded jobs **without paying again** (files can be re-downloaded free for 30 days). Exception: if it says *a submit was recorded but no job id was saved*, stop and follow [Troubleshooting](#troubleshooting). Do not submit again blindly.
@@ -250,6 +264,34 @@ You write the spec  →  Claude builds + tests  →  Codex reviews (no edits)
 - Anything touching **money, orders, sizing, or keys** needs your approval.
 
 Copy-paste prompts: [TRADING_BOT_GUIDE.md, Section 12](TRADING_BOT_GUIDE.md#12-working-with-claude-code-and-codex-together).
+
+---
+
+## Strategy results
+
+### Strategy 1: EMA x VWAP: ❌ FAILED (2026-10-15)
+
+**Rules:** enter when a candle breaks through VWAP (long above, short below); exit when a candle closes back through the EMA. Same timeframe for both. 1 CL contract, $4.02 fees + 1 tick slippage per side.
+
+**Tested:** 6,144 combinations = 8 timeframes (1–60 min) × 8 EMA lengths (9–200) × 3 VWAP anchors (day / session / week) × 2 entry types (candle close crosses VWAP / price touches VWAP) × 4 stops (none / 10 / 15 / 20 ticks) × 4 sessions (Asian / London / New York / All).
+
+| Finding | Result |
+|---|---|
+| Settings profitable after costs (2010–2021) | 37 of 6,144 (0.6%), only 3 with +1 tick extra slippage |
+| Settings passing every safety gate | **0** |
+| "Best" setting (2010–2021) | 60 min / EMA 21 / weekly VWAP / close-cross / no stop / New York: **+$24/trade**, profit factor 1.11 |
+| Same setting on unseen 2022–2026 | **−$33/trade**, profit factor 0.90, Combine pass 16% vs fail 78% |
+| Walk-forward (pick each year from earlier years only) | No year ever had a qualifying setting |
+
+**What we learned:**
+- **Timeframe:** longer is better (60 min is least bad); 1–15 min lose in every setting, because costs eat small moves.
+- **Entry:** close-cross beats touch; touch entries never made money.
+- **Stops:** tight stops (10 ticks) hurt the most; CL's noise hits them constantly.
+- **Session:** no session works; New York has the single best setting but also the worst median.
+- **Overfitting is real:** the best of 6,144 tries looked profitable only by luck, and it lost money on new data.
+- **Drawdown:** even the best settings had a 95th-percentile drawdown of ~$3,000–4,700 in 60 days, which is more than the $2,000 Topstep limit. 1 CL contract without a stop is too big for a 50K account with this rule.
+
+Full reports (local): `data/backtests/ema_vwap/report.md` (development), `holdout.md` (holdout), `results.csv` (all 6,144).
 
 ---
 

@@ -307,6 +307,8 @@ Each phase has a **goal**, **tasks**, and a **"done when"** checklist. Do not sk
 
 ### Phase 1 — Write the strategy in plain words
 
+> **Strategy log:** Strategy 1, **EMA x VWAP**, was tested on 2026-10-15 across 6,144 settings and **failed** (best setting: +$24/trade on 2010–2021, then −$33/trade on unseen 2022–2026). Details and lessons: README → "Strategy results". Run a new strategy through the same two steps: `propfirm_backtest.search`, then `propfirm_backtest.holdout` once.
+
 **Goal:** a strategy so clear that two different people (or AIs) would code it the same way.
 
 - [ ] Write a one-page **strategy spec**: market, time window, entry rule, stop rule, target rule, exit rule, max trades per day, news blocks.
@@ -356,7 +358,7 @@ Each phase has a **goal**, **tasks**, and a **"done when"** checklist. Do not sk
 3. **Build two datasets:**
    - **Unadjusted tradable series** with a written roll rule (for example: switch when the next contract has higher daily volume, decided only with information available at that time). Use this for fills, stops, and profit/loss.
    - **Optional back-adjusted series** for indicators only. **Never** use adjusted prices for simulated fills or profit/loss — they are not real prices.
-4. **Cross-check** the most recent 2 years against Massive's free tier on a few normal days, rollover days, and EIA days.
+4. **Cross-check** the most recent 2 years against Massive's free tier (`python -m propfirm_data.crosscheck`). ✅ Done: open/high/low/volume match ~99.6–99.99%; closes differ on ~1.8% of bars, and checking the individual trades showed **Databento is correct** (Massive mis-orders fills that happen in the same instant).
 5. **If the free credit is not enough,** pay for 1 month of Barchart Premier or Massive Developer, download what you need, then cancel.
 6. **From day one of live/practice trading,** save every bar the Topstep API sends you, so your own archive grows.
 
