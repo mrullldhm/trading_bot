@@ -54,6 +54,9 @@ N_SIMS_WF = 300
 SEED = 12345
 SOURCE_FILES = ["bars.py", "indicators.py", "engine.py", "propsim.py", "search.py", "holdout.py"]
 
+WF_MIN_TRADES_FLOOR = 100
+WF_TRADES_PER_YEAR = 25
+
 GATES = {
     "min_trades": 300,
     "min_positive_year_frac": 0.6,  # years with zero trades count as not positive
@@ -172,15 +175,21 @@ def single(m, cal, cfg, **kw):
 
 # --- selection ----------------------------------------------------------------------------------
 
-def gate_mask(df: pd.DataFrame) -> pd.Series:
+def gate_mask(df: pd.DataFrame, min_trades: int = GATES["min_trades"]) -> pd.Series:
     g = GATES
-    return ((df["trades"] >= g["min_trades"])
+    return ((df["trades"] >= min_trades)
             & (df["expectancy_usd"] > 0)
             & (df["expectancy_slip2"] > 0)
             & (df["positive_year_frac"] >= g["min_positive_year_frac"])
             & (df["best_year_share"] <= g["max_best_year_share"])
             & (df["best_day_share"] <= g["max_best_day_share"])
             & (df["p95_drawdown"] <= g["max_p95_drawdown"]))
+
+
+def wf_min_trades(n_years: int) -> int:
+    """Walk-forward folds see only the earlier years: absolute floor + the full gate's per-year rate
+    (300 trades over ~11.5 dev years ~ 25/year). A flat 300 would reject slow edges in early folds."""
+    return max(WF_MIN_TRADES_FLOOR, WF_TRADES_PER_YEAR * n_years)
 
 
 def plateau(df: pd.DataFrame, col: str) -> np.ndarray:
@@ -201,9 +210,9 @@ def score(dpnl, dlow, days: slice, n_sims):
     return P.pass_probability(dpnl[:, days].astype(np.float64), dlow[:, days].astype(np.float64), n_sims, SEED)
 
 
-def rank(df: pd.DataFrame) -> pd.DataFrame:
+def rank(df: pd.DataFrame, min_trades: int = GATES["min_trades"]) -> pd.DataFrame:
     df = df.copy()
-    df["passes_gates"] = gate_mask(df)
+    df["passes_gates"] = gate_mask(df, min_trades)
     df["plateau_score"] = plateau(df, "pass_prob")
     pool = df[df["passes_gates"]]
     if pool.empty:
@@ -230,13 +239,13 @@ def walk_forward(df, dpnl, dlow, dpnl2, ytrades, cal):
         d = df[KEYS].copy()
         d["pass_prob"] = res[:, 0]
         d["p95_drawdown"] = res[:, 2]
-        d["trades"] = ytrades[:, before].sum(axis=1)  # same literal 300-trade gate, observed so far
+        d["trades"] = ytrades[:, before].sum(axis=1)
         d["expectancy_usd"] = total
         d["expectancy_slip2"] = dpnl2[:, :prefix].sum(axis=1)
         d["positive_year_frac"] = (ypnl[:, before] > 0).mean(axis=1)
         d["best_year_share"] = ypnl[:, before].max(axis=1) / safe_total
         d["best_day_share"] = dpnl[:, :prefix].max(axis=1) / safe_total
-        d = rank(d)
+        d = rank(d, wf_min_trades(int(before.sum())))
         pool = d[d["passes_gates"]]
         if pool.empty:
             rows.append({"year": year, "champion": "none qualified", "pnl_usd_in_year": 0.0})
@@ -347,6 +356,9 @@ def main() -> int:
         OUT_DIR = OUT_DIR.parent / "ema_vwap_quick"
         B.TIMEFRAMES[:] = [5, 10, 15]
         I.EMA_LENGTHS[:] = [13, 20, 21, 34]
+    tag = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--folder=")), None)
+    if tag:  # new research folder: its holdout is NOT clean if an earlier folder's holdout was opened
+        OUT_DIR = OUT_DIR.parent / f"ema_vwap_{tag}"
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     if (OUT_DIR / "holdout_opened.json").exists():
         print("The holdout was already opened for these picks. Re-running the search now would let")

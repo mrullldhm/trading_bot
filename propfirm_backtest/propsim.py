@@ -7,7 +7,11 @@ Combine rules modelled (verify on Topstep's help center before relying on them):
   losses touches it during the day.
 - Consistency: best day must be <= 55% of total profit when the target is reached;
   otherwise keep trading (the target effectively rises).
-- We cap an attempt at MAX_DAYS trading days (a practical subscription-cost limit).
+- Daily Loss Limit $1,000 (optional, `apply_dll`): positions are liquidated when the day's
+  equity (incl. open losses) reaches -$1,000 and the day is over; the attempt goes on.
+- Topstep has no time limit. We cap an attempt at MAX_DAYS trading days (~1 year of monthly fees).
+- Drawdown (the p95 gate) is measured over the first DD_WINDOW days of an attempt only, so a longer
+  horizon changes the pass/fail odds but not what the drawdown gate means.
 """
 
 import numpy as np
@@ -17,13 +21,22 @@ TICK_USD = 10.0
 FEE_USD = 4.02  # round turn, TopstepX CL (verify)
 TARGET = 3000.0
 MLL = 2000.0
+DLL = 1000.0
 CONSISTENCY = 0.55
-MAX_DAYS = 60
+MAX_DAYS = 250
+DD_WINDOW = 60
 BLOCK = 5  # days per bootstrap block (keeps streaks together)
 
 
 def trade_pnl_usd(direction, px_in, px_out) -> np.ndarray:
     return direction * (px_out - px_in) * TICK_USD - FEE_USD
+
+
+def apply_dll(day_pnl: np.ndarray, day_low: np.ndarray, dll: float = DLL) -> tuple[np.ndarray, np.ndarray]:
+    """Daily Loss Limit: a day whose intraday low reaches -dll is liquidated at -dll and ends there.
+    Approximation: the liquidation fills exactly at the limit, and later trades that day are lost."""
+    hit = day_low <= -dll
+    return np.where(hit, -dll, day_pnl), np.maximum(day_low, -dll)
 
 
 @njit(cache=True)
@@ -78,7 +91,7 @@ def _combine_attempt(day_pnl, day_low, start_days, block):
                 return 0, d, max_dd
             k = (start_days[b] + o) % n
             low = bal + day_low[k]
-            if eod_peak - low > max_dd:
+            if d < DD_WINDOW and eod_peak - low > max_dd:
                 max_dd = eod_peak - low
             if low <= floor:
                 return -1, d + 1, max_dd

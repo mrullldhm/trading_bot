@@ -76,6 +76,10 @@ def main() -> int:
             print(f"Missing {f}. Run: python -m propfirm_backtest.family_search {name}")
             return 1
         frozen[name] = json.loads(f.read_text())
+        if frozen[name].get("source_sha256") != O.source_hash(fam):
+            print(f"{f} was made by different code or reference data. Re-run: "
+                  f"python -m propfirm_backtest.family_search {name}")
+            return 1
         results[name] = pd.read_csv(fam.out_dir / "results.csv.gz")  # sorted by rank: row 0 = champion
 
     print("Loading development data...", flush=True)

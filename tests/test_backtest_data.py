@@ -21,11 +21,12 @@ def et(times):
     return [pd.Timestamp(t, tz="America/New_York").tz_convert("UTC") for t in times]
 
 
-def test_bars_split_at_1605_and_never_span_contracts():
-    df = minutes_df(et(["2025-11-04 15:58", "2025-11-04 16:03", "2025-11-04 16:06", "2025-11-04 16:20"]))
+def test_bars_split_at_day_end_and_never_span_contracts():
+    assert B.DAY_END == 16 * 60 + 14  # last exit 16:09 ET (Topstep flat 16:10 ET) + 5-minute cutoff window
+    df = minutes_df(et(["2025-11-04 15:58", "2025-11-04 16:12", "2025-11-04 16:15", "2025-11-04 16:20"]))
     m = B.build_minutes(df)
     b = B.build_bars(m, 60)
-    # 15:58 -> 15:00 bucket; 16:03 -> [16:00,16:05); 16:06 + 16:20 -> after the 16:05 split
+    # 15:58 -> 15:00 bucket; 16:12 -> [16:00,16:14); 16:15 + 16:20 -> after the 16:14 split
     assert list(b.start) == [0, 1, 2]
     assert list(b.end) == [1, 2, 4]
     two = B.build_minutes(pd.concat([df, minutes_df(et(["2025-11-04 16:30"]), sym="CLF6")]))
@@ -33,12 +34,12 @@ def test_bars_split_at_1605_and_never_span_contracts():
 
 
 def test_session_masks_and_cutoff():
-    df = minutes_df(et(["2025-11-04 08:00", "2025-11-04 15:59", "2025-11-04 16:00", "2025-11-04 16:05",
+    df = minutes_df(et(["2025-11-04 08:00", "2025-11-04 16:08", "2025-11-04 16:09", "2025-11-04 16:14",
                         "2025-11-04 19:00", "2025-11-05 02:56"]))
     m = B.build_minutes(df)
     ny, _, ny_cut = B.session_mask(m, "newyork")
     assert list(ny) == [True, True, True, False, False, False]
-    assert list(ny_cut) == [False, False, True, False, False, False]  # last 5 min before 16:05
+    assert list(ny_cut) == [False, False, True, False, False, False]  # 16:09 starts the cutoff: exit at its open
     asia, inst, asia_cut = B.session_mask(m, "asian")
     assert list(asia) == [False, False, False, False, True, True]
     assert inst[4] == inst[5]  # 19:00 and 02:56 next day = same Asian night
@@ -91,6 +92,19 @@ def test_combine_pass_fail_and_trailing_lock():
     # consistency: one 2,900 day + 200 = 3,100 total, best day 94% > 55% -> not passed yet
     p, l = days([2900, 200])
     assert P._combine_attempt(p, l, np.array([0]), 2)[0] == 0
+
+
+def test_combine_has_no_60_day_limit_and_drawdown_window_is_60_days():
+    assert P.MAX_DAYS > 60  # Topstep has no time limit; the cap is a subscription budget
+    # +40/day reaches the $3,000 target on day 75: passes, after the old 60-day cap
+    p = np.full(100, 40.0)
+    assert P._combine_attempt(p, np.zeros(100), np.array([0]), 100)[0:2] == (1, 75)
+    # a -1,500 dip on day 61 is outside the 60-day drawdown window (and above the floor)
+    p = np.zeros(80); l = np.zeros(80)
+    p[60] = l[60] = -1500.0
+    assert P._combine_attempt(p, l, np.array([0]), 80) == (0, 80, 0.0)
+    p[59] = l[59] = -100.0  # inside the window: counted
+    assert P._combine_attempt(p, l, np.array([0]), 80)[2] == 100.0
 
 
 def test_trade_pnl_includes_fees():

@@ -21,7 +21,7 @@ Rules (all prices in ticks, $10 each):
 - Breakeven: once price reaches fill + 1R, the stop moves to the fill price from the NEXT minute.
 - Protective stop: fills at stop - slip, or open - slip if price gapped through.
 - Exit at the open of the first minute >= flat time, or in the roll cutoff (minus slip). Session
-  flat = 16:00 ET, 13:00 ET on scheduled short days (CME holiday calendar).
+  flat = 16:09 ET, 12:55 ET on scheduled short days (CME holiday calendar).
 - Ambiguity inside one 1-min candle is resolved pessimistically (pessimistic=True):
   STOP entry + stop touched in the entry minute = stopped; no target in the STOP entry minute
   (a CLOSE entry fills at the minute's open, so the rest of that minute is genuinely after it);
@@ -49,7 +49,7 @@ ET = "America/New_York"
 LONDON = "Europe/London"
 NS_PER_MIN = 60_000_000_000
 MIN_SANE_TMIN, MAX_SANE_TMIN = 10_000_000, 100_000_000  # minutes since epoch: years 1989 .. 2160
-SESSION_FLAT_MOD = 16 * 60  # flat by 16:00 ET (Topstep: 3:10 PM CT = 16:10 ET)
+SESSION_FLAT_MOD = 16 * 60 + 9  # exit at the 16:09 ET open: Topstep closes everything at 3:10 PM CT = 16:10 ET
 SHORT_DAY_FLAT_MOD = 12 * 60 + 55  # CME holiday halts: 13:00 ET (2014-21), 13:15 / 13:45 / 14:30 other years
 CLOSE_BUFFER = 5  # flat 5 minutes before a contract expires
 EIA_BLOCK = 15  # no entries from 15 min before to 15 min after a release
@@ -223,9 +223,9 @@ def short_days(days: np.ndarray) -> np.ndarray:
 
 def session_end(f: Front, days: np.ndarray) -> np.ndarray:
     """Per trading day: the flat-by minute, all known in advance:
-    16:00 ET; 12:55 ET on a scheduled short day; 5 min before the front contract expires
+    16:09 ET; 12:55 ET on a scheduled short day; 5 min before the front contract expires
     (on its last day it can still be the front month, and it stops trading at 14:30 ET).
-    Days without any daytime trading get -1 (closed; there is no range to trade anyway).
+    Never derived from whether the day later HAS data: an evening (18:00 ET) entry cannot know that.
     Unscheduled data gaps are NOT treated as closes: a position runs into them as in real life."""
     out = local_tmin(days, SESSION_FLAT_MOD, ET)
     short = short_days(days)
@@ -237,7 +237,6 @@ def session_end(f: Front, days: np.ndarray) -> np.ndarray:
     exp = f.expiry[f.contract[last_row.to_numpy()]]
     expiring = (exp >= 0) & (exp - CLOSE_BUFFER < out[k])
     out[k[expiring]] = exp[expiring] - CLOSE_BUFFER
-    out[~np.isin(days, td)] = -1
     return out
 
 

@@ -138,7 +138,9 @@ propfirm/
 │   ├── orb_family_reference.py ← slow plain-Python versions of 3-5 + features
 │   ├── family_search.py      ← strategies 3-5, step 1 (grids, selection, reports)
 │   ├── family_holdout.py     ← strategies 3-5, step 2 (refuses if the champion failed the gates)
-│   └── family_program.py     ← strategies 3-5 as one programme (union DSR/PBO, Holm)
+│   ├── family_program.py     ← strategies 3-5 as one programme (union DSR/PBO, Holm)
+│   ├── audit.py              ← backtest audit: scenarios, positive control, idea-vs-execution, report
+│   └── acd_signal_holdout.py ← pre-registered once-only ACD entry-signal test on 2022+
 ├── tests/                    ← automatic tests (no internet needed)
 └── data/                     ← downloaded data (never committed, ~360 MB)
     ├── raw/                  ← original Databento files: raw/{bars,definitions}/<job-id>/*.dbn.zst
@@ -224,6 +226,8 @@ Lesson for backtesting: different data vendors can disagree on 1-minute closes, 
 | `python -m propfirm_backtest.family_search zab\|crabel\|acd [--quick]` | Strategies 3-5: grid + selection (a few minutes each) | No |
 | `python -m propfirm_backtest.family_program` | Strategies 3-5 programme checks (after the three searches) | No |
 | `python -m propfirm_backtest.orb_holdout` / `family_holdout <name>` | Holdout of a frozen champion. **Runs once only**; the family version refuses if the champion failed the gates | No |
+| `python -m propfirm_backtest.audit scenarios` / `control` / `report` | Backtest audit: re-runs every search under other assumptions (~4 h), the planted-edge control, then the report | No |
+| `python -m propfirm_backtest.acd_signal_holdout --register` / `--run` | Freeze the ACD signal test (never reads 2022+), then run it **once only** | No |
 | `python -m pytest -q` | Runs all automatic tests | No |
 
 If downloading or converting is interrupted, re-running `download --yes` resumes the recorded jobs **without paying again** (files can be re-downloaded free for 30 days). Exception: if it says *a submit was recorded but no job id was saved*, stop and follow [Troubleshooting](#troubleshooting). Do not submit again blindly.
@@ -331,6 +335,45 @@ Strategies 3-5 were also judged as one programme (12,809 unique trade streams): 
 - **Luck checks still say no:** walk-forward (picking each year from earlier years only) never found a qualifying setting; deflated Sharpe of the best ACD setting is 2.7% (needs 95%).
 
 Full reports (local): `data/backtests/{orb,zab,crabel,acd}/report.md`, `results.csv.gz` (every config), `champion_trades_dev.csv`, and `data/backtests/orb_families_program.md`.
+
+### Backtest audit: are the FAILs real? (2026-10-16)
+
+The question: did strategies 1-5 fail because they have no edge, or because of a backtest bug, bad data, or rules stricter than Topstep's? Every bias in the engine is **pessimistic** (stop wins ties, targets need a trade-through, 1-2 ticks slippage, $1,000 drawdown gate). A pessimistic bug can never fake a PASS, but it **can** fake a FAIL. So the audit tests both directions. Built by Claude, every step reviewed by Codex.
+
+**Bugs and rule mismatches found and fixed** (all 5 searches re-run afterwards):
+
+| Finding | Effect |
+|---|---|
+| Flat at 16:00 ET, Topstep allows until 16:10 ET | now exit at the 16:09 open |
+| Combine simulation stopped at 60 days; Topstep has no time limit | now 250 days (~1 year of fees); the drawdown gate still measures the first 60 days |
+| EMA walk-forward needed 300 trades already in its first 3-year fold | now max(100, 25 per training year), like ORB |
+| A day with no daytime data was marked "closed" in advance: a look-ahead for 18:00 ET entries (found by the new truncation test) | 1 day in 12 years affected; fixed in engine and reference |
+
+**What passed:**
+- **No look-ahead.** Cutting the data at random minutes, or replacing the future with a random path, changes no earlier decision in any engine. A deliberately planted leak is caught.
+- **Accounting.** Long+short pairs cost exactly 2 x (fee + slippage), to 1e-14. Mirrored prices turn every long-only config into the short-only one, trade for trade.
+- **Timezone/DST.** Volume spikes sit exactly at 09:00, Wed 10:30 and 14:28 ET in both summer and winter time.
+- **Data.** Daily closes match the official WTI spot (EIA via FRED) over 2010-2021, with a median gap of $0.03.
+- **Fees and rules** match the Topstep help center ($4.02 CL, $3,000 target, $2,000 MLL, 55% consistency).
+- **The pipeline can pass a real edge.** An edge planted in the real data, in ORB's own language, is found from ~$150/trade (gross) when the drawdown gate is off. Noise is never picked.
+
+**Re-run results (rule-fixed engine, 2010-2021):**
+
+| # | Champion $/trade (+1 tick) | Passed every gate | Verdict | Why |
+|---|---|---|---|---|
+| 1 EMA x VWAP | $24 ($4) | 0 | FAIL | passes only with ALL of: zero costs, optimistic fills, no drawdown gate |
+| 2 ORB | $20 ($4) | 0 | FAIL, **no edge after costs** | no edge in the entry signal itself either |
+| 3 ZAB | $26 ($6) | 0 | FAIL, **no edge after costs** | no edge in the entry signal itself either |
+| 4 Crabel | $85 ($65), 381 trades | 0 | FAIL, **depends on the drawdown gate** | a robust pick appears with the gate at $2,000 (= the whole MLL); its entry edge shows only in 2010-15 |
+| 5 Fisher ACD | $45 ($25) | 0 | FAIL, **no edge after costs out of sample** | entry signal shows drift in-sample (best of 2,880, so exploratory) |
+
+**Idea vs execution.** Each champion's entries were frozen and followed with no stop or target, against random entries at the same minute and side in the same weeks. ORB, ZAB and Crabel entries do **not** beat random entries, so better stops or targets cannot rescue them (with no drift, no exit rule creates profit). Stopped-out trades did not recover more often than random ones: the stops are not too tight.
+
+**The real wall is risk, not bugs.** Even a planted edge of ~$150/trade cannot pass the $1,000 p95-drawdown gate on 1 CL; it takes ~$300/trade. CL's normal noise on 1 contract puts the 60-day p95 drawdown at ~$2,300-3,000 for every champion.
+
+**ACD holdout: edge NOT confirmed (2026-10-16).** A pre-registered, once-only test of the ACD champion's entries on 2022+ data (575 signals) found no edge. At 60 minutes the entries did $27/trade *worse* than random entries in the same weeks (randomization p = 0.85). The full strategy with its own exits lost $58/trade (−$33,220). The in-sample drift was selection luck. Report: `data/backtests/acd/signal_holdout.md`. The ACD holdout is now spent.
+
+Full report (local): `data/backtests/audit/report.md`, trade charts `data/backtests/audit/trades_chart.html`. The tables above for strategies 1-5 are from the original run, before these fixes; strategy 1's new picks (`ema_vwap_v2`) have no clean holdout.
 
 ---
 

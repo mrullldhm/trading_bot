@@ -17,14 +17,17 @@ DAY_START_MIN = 18 * 60  # CME trading day starts 18:00 ET
 CUTOFF_BUFFER_MIN = 5  # be flat 5 minutes before a session end or a roll
 WARMUP_DAYS = 30  # CL.v.1 history kept per contract for indicator warm-up
 
+FLAT_MOD = 16 * 60 + 9  # last exit at the 16:09 ET open: Topstep closes everything at 3:10 PM CT = 16:10 ET
+DAY_END = FLAT_MOD + CUTOFF_BUFFER_MIN  # cutoff window [16:09, 16:14)
+
 # (start, end) as ET minutes-of-day, half-open [start, end). start > end means it wraps midnight.
 SESSIONS = {
     "asian": (19 * 60, 3 * 60),
     "london": (3 * 60, 8 * 60),
-    "newyork": (8 * 60, 16 * 60 + 5),
-    "all": (18 * 60, 16 * 60 + 5),
+    "newyork": (8 * 60, DAY_END),
+    "all": (18 * 60, DAY_END),
 }
-SPLIT_MIN = 16 * 60 + 5  # session cutoff not on a timeframe boundary: bars are split here
+SPLIT_MIN = DAY_END  # session cutoff not on a timeframe boundary: bars are split here
 TIMEFRAMES = [1, 2, 3, 5, 10, 15, 30, 60]
 
 
@@ -171,7 +174,7 @@ class Bars:
 
 def build_bars(m: Minutes, tf: int) -> Bars:
     """Clock-aligned ET buckets of `tf` minutes, never spanning a contract, an ET date,
-    the 16:05 cutoff, or a change in front-month status."""
+    the DAY_END cutoff, or a change in front-month status."""
     if 1440 % tf:
         raise ValueError("timeframe must divide a day")
     bucket = m.mod // tf

@@ -56,3 +56,12 @@ def test_holdout_refuses_changed_code(tmp_path, monkeypatch):
     (tmp_path / "frozen_picks.json").write_text(json.dumps({"source_sha256": "different"}))
     assert H.main() == 3
     assert not (tmp_path / "holdout_opened.json").exists()
+
+
+def test_walk_forward_trade_minimum_scales_with_fold_years():
+    assert S.wf_min_trades(3) == 100  # floor: 3 years x 25 = 75
+    assert S.wf_min_trades(8) == 200
+    df = configs()
+    df["trades"] = 150
+    assert not S.gate_mask(df).any()  # full gate: 300
+    assert S.gate_mask(df, S.wf_min_trades(4)).all()  # a 4-year fold needs 100

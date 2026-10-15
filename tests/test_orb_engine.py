@@ -99,6 +99,16 @@ def test_flat_time_exit_at_open():
     assert exit_ts.strftime("%H:%M") == "10:05"  # range end 09:05 + 60 min
 
 
+def test_session_flat_exits_at_1609_before_topstep_close():
+    """Topstep closes every position at 3:10 PM CT = 16:10 ET: the last exit is the 16:09 open."""
+    rows = flat_range() + [at(0, 7008, 7011, 7006, 7010)] + [at(k, 7012, 7013, 7011, 7012) for k in range(1, 435)]
+    mk, _ = market(bars_df(rows))
+    (t,) = trades(mk, cfg(target_x10=0, window=60, flat=E.SESSION))
+    assert t[7] == E.EXIT_TIME
+    exit_ts = pd.Timestamp(mk.f.tmin[t[2]] * E.NS_PER_MIN, tz="UTC").tz_convert(E.ET)
+    assert exit_ts.strftime("%H:%M") == "16:09"
+
+
 def test_missing_minutes_in_range():
     rows = flat_range(n=10)
     del rows[2]  # 9 of 10 minutes traded: still a valid 10-minute range

@@ -26,12 +26,10 @@ def day_setup(f: E.Front, rows: dict, daytime: dict, trading_day: int, anchor: s
     if after >= len(f) or len({int(f.contract[i]) for i in idx + [after]}) != 1 or any(f.cut[i] for i in idx):
         return None
     day_date = pd.Timestamp("1970-01-01") + pd.Timedelta(days=trading_day)
-    daytime = daytime.get(trading_day, [])
-    if not daytime:
-        return None
+    daytime = daytime.get(trading_day, [])  # may be empty (outage): the flat time is scheduled, not data-driven
     flat_mod = E.SHORT_DAY_FLAT_MOD if E.short_days(np.array([trading_day]))[0] else E.SESSION_FLAT_MOD
     sess_end = _utc_min((day_date + pd.Timedelta(minutes=flat_mod)).tz_localize(E.ET))
-    exp = int(f.expiry[f.contract[max(daytime, key=lambda k: f.tmin[k])]])
+    exp = int(f.expiry[f.contract[max(daytime, key=lambda k: f.tmin[k])]]) if daytime else -1
     if exp >= 0 and exp - E.CLOSE_BUFFER < sess_end:
         sess_end = exp - E.CLOSE_BUFFER
     if sess_end <= start + L:
