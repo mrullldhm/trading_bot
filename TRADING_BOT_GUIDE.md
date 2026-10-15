@@ -307,7 +307,7 @@ Each phase has a **goal**, **tasks**, and a **"done when"** checklist. Do not sk
 
 ### Phase 1 — Write the strategy in plain words
 
-> **Strategy log:** Strategy 1, **EMA x VWAP**, was tested on 2026-10-15 across 6,144 settings and **failed** (best setting: +$24/trade on 2010–2021, then −$33/trade on unseen 2022–2026). Details and lessons: README → "Strategy results". Run a new strategy through the same two steps: `propfirm_backtest.search`, then `propfirm_backtest.holdout` once.
+> **Strategy log:** Strategies 1-6 (EMA x VWAP, ORB, ZAB, Crabel, Fisher ACD, a third-party VWAP Break bot) were tested on 2026-10-15/16 and **all failed**. A backtest audit confirmed the failures are real, not bugs or bad data. The main wall is drawdown on 1 CL. Details and lessons: README → "Strategy results" and "Backtest audit". Run a new strategy through the same steps: a development search on 2010–2021 (`propfirm_backtest.search` / `orb_search` / `family_search`), then its holdout **once**.
 
 **Goal:** a strategy so clear that two different people (or AIs) would code it the same way.
 

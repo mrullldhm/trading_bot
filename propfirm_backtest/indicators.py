@@ -1,4 +1,4 @@
-"""EMA, SMA, ATR and anchored VWAP. All prices are in ticks (1 tick = $0.01)."""
+"""EMA and anchored VWAP. All prices are in ticks (1 tick = $0.01)."""
 
 import numpy as np
 from numba import njit
@@ -30,68 +30,6 @@ def _ema(close, contract, length):
 
 def ema(bars: Bars, length: int) -> tuple[np.ndarray, np.ndarray]:
     return _ema(bars.close, bars.contract, length)
-
-
-@njit(cache=True)
-def _sma(close, contract, length):
-    """Simple moving average of the last `length` closes of the same contract. Returns (sma, valid)."""
-    n = len(close)
-    out = np.full(n, np.nan)
-    valid = np.zeros(n, dtype=np.bool_)
-    total = 0.0
-    count = 0
-    first = 0  # first row of the current contract
-    for i in range(n):
-        if i == 0 or contract[i] != contract[i - 1]:
-            total = 0.0
-            count = 0
-            first = i
-        total += close[i]
-        count += 1
-        if i - first >= length:
-            total -= close[i - length]
-        if count >= length:
-            out[i] = total / length
-            valid[i] = True
-    return out, valid
-
-
-def sma(bars: Bars, length: int) -> tuple[np.ndarray, np.ndarray]:
-    return _sma(bars.close, bars.contract, length)
-
-
-@njit(cache=True)
-def _atr(high, low, close, contract, length):
-    """Wilder ATR per contract: seeded with the mean of the first `length` true ranges, then
-    atr = (atr * (length - 1) + tr) / length. The first bar of a contract has tr = high - low."""
-    n = len(close)
-    out = np.full(n, np.nan)
-    valid = np.zeros(n, dtype=np.bool_)
-    count = 0
-    acc = 0.0
-    for i in range(n):
-        if i == 0 or contract[i] != contract[i - 1]:
-            count = 0
-            acc = 0.0
-            tr = high[i] - low[i]
-        else:
-            pc = close[i - 1]
-            tr = max(high[i] - low[i], abs(high[i] - pc), abs(low[i] - pc))
-        count += 1
-        if count < length:
-            acc += tr
-        elif count == length:
-            acc = (acc + tr) / length
-        else:
-            acc = (acc * (length - 1) + tr) / length
-        if count >= length:
-            out[i] = acc
-            valid[i] = True
-    return out, valid
-
-
-def atr(bars: Bars, length: int) -> tuple[np.ndarray, np.ndarray]:
-    return _atr(bars.high, bars.low, bars.close, bars.contract, length)
 
 
 def anchor_ids(m: Minutes, anchor: str, session: str) -> np.ndarray:

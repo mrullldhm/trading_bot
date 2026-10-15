@@ -2,7 +2,7 @@
 
 Usage:
     python -m propfirm_backtest.audit scenarios [--quick]   # re-run every search under other assumptions
-    python -m propfirm_backtest.audit control [--quick]     # positive control: plant an edge, must be found
+    python -m propfirm_backtest.audit control               # positive control: plant an edge, must be found
     python -m propfirm_backtest.audit report                # data + engine checks, verdicts, report.md
 
 Every engine bias is pessimistic, and a pessimistic bug can fake a FAIL (never a PASS). So the audit

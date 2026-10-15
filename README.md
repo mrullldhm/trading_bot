@@ -2,9 +2,9 @@
 
 The foundation for a planned automated trading bot for a **Topstep** prop-firm account, trading **Crude Oil futures (CL)**. Built step by step by a beginner, with **Claude Code** and **OpenAI Codex** as AI pair-programmers.
 
-Right now it **downloads, converts, validates, and cross-checks** CL historical data. Strategy, backtesting, and live-trading code come next.
+Right now it **downloads, converts, validates, and cross-checks** CL historical data, and **backtests** strategies on it with Topstep's rules, a once-only holdout per strategy, and an audit of the backtester itself. Live-trading code comes next.
 
-> **Status:** Data pipeline and backtester done. Strategies 1-5 (EMA x VWAP, ORB, ZAB, Crabel, Fisher ACD) tested: **all failed** the safety gates. See [Strategy results](#strategy-results). No live-trading code yet.
+> **Status:** Data pipeline and backtester done. Strategies 1-6 (EMA x VWAP, ORB, ZAB, Crabel, Fisher ACD, a third-party VWAP Break bot) tested: **all failed**. A full [backtest audit](#backtest-audit-are-the-fails-real-2026-10-16) confirmed the failures are real, not bugs or bad data. See [Strategy results](#strategy-results). No live-trading code yet.
 >
 > **Not financial advice.** Most trading strategies lose money. This project is a learning build with heavy safety checks, not a promise of profit.
 
@@ -51,7 +51,7 @@ The roadmap comes from [TRADING_BOT_GUIDE.md, Section 8](TRADING_BOT_GUIDE.md#8-
 | Phase | What | Status |
 |---|---|---|
 | 0 | Learn and set up | ✅ Done |
-| 1 | Write the strategy in plain words | 🔁 Strategies 1-5 written and tested. **All failed.** Main blocker: drawdown on 1 CL (see [lessons](#lessons-across-strategies-1-5)) |
+| 1 | Write the strategy in plain words | 🔁 Strategies 1-6 written and tested. **All failed.** Main blocker: drawdown on 1 CL (see [lessons](#lessons-across-strategies-1-5)) |
 | 2 | Get data and handle rollover | ✅ Done: downloaded, validated, cross-checked against Massive (Databento confirmed correct, see [results](#data-quality-results)) |
 | 3 | Backtest with real costs | ✅ Backtester built (`propfirm_backtest/`), verified independently by Codex |
 | 4 | Robustness testing (out-of-sample, walk-forward, Monte Carlo) | ✅ Built in: holdout, walk-forward, bootstrap Combine simulation, slippage stress |
@@ -123,6 +123,7 @@ propfirm/
 │   ├── crosscheck.py         ← compare Databento with Massive
 │   └── eia_calendar.py       ← EIA release slots to block (from the published rule only)
 ├── propfirm_backtest/        ← backtester (numba-compiled)
+│   ├── __init__.py           ← package marker
 │   ├── bars.py               ← contracts, sessions, timeframe bars, roll schedule
 │   ├── indicators.py         ← EMA, anchored VWAP
 │   ├── engine.py             ← trade simulator (1-minute fill ordering, stops, cutoffs)
@@ -140,13 +141,25 @@ propfirm/
 │   ├── family_holdout.py     ← strategies 3-5, step 2 (refuses if the champion failed the gates)
 │   ├── family_program.py     ← strategies 3-5 as one programme (union DSR/PBO, Holm)
 │   ├── audit.py              ← backtest audit: scenarios, positive control, idea-vs-execution, report
-│   └── acd_signal_holdout.py ← pre-registered once-only ACD entry-signal test on 2022+
-├── tests/                    ← automatic tests (no internet needed)
+│   ├── acd_signal_holdout.py ← pre-registered once-only ACD entry-signal test on 2022+
+│   ├── vwap_break_engine.py  ← strategy 6: third-party VWAP Break bot simulator (numba)
+│   ├── vwap_break_reference.py ← slow plain-Python strategy 6, cross-checks the engine
+│   └── vwap_break_eval.py    ← strategy 6: replicate + out-of-sample + neighbours report
+├── tests/                    ← automatic tests (no internet needed), one file per module:
+│                               test_<module>.py; the audit adds test_audit_engine.py (look-ahead,
+│                               mirror, zero-sum, planted edge), test_audit_report.py, test_acd_signal_holdout.py
 └── data/                     ← downloaded data (never committed, ~360 MB)
     ├── raw/                  ← original Databento files: raw/{bars,definitions}/<job-id>/*.dbn.zst
     ├── processed/            ← clean Parquet, one file per year
     ├── manifests/            ← record of paid jobs (do not delete)
-    └── crosscheck/           ← Massive cache + cross-check report
+    ├── crosscheck/           ← Massive cache + cross-check report
+    └── backtests/            ← strategy results, one folder per strategy (see Strategy results)
+        ├── ema_vwap/         ← strategy 1, original run + its opened holdout
+        ├── ema_vwap_v2/      ← strategy 1 re-run under the audit's rule fixes (no clean holdout)
+        ├── orb/ zab/ crabel/ acd/ ← strategies 2-5 (rule-fixed run); acd/ also holds the spent signal holdout
+        ├── orb_families_program.md ← strategies 3-5 judged as one programme
+        ├── vwap_break/       ← strategy 6
+        └── audit/            ← audit report, trade charts, scenario and control re-runs
 ```
 
 **Why separate files?** Each file has one job and can be tested alone, like departments in a small company. If something breaks, you know where to look.
@@ -219,14 +232,15 @@ Lesson for backtesting: different data vendors can disagree on 1-minute closes, 
 | `python -m propfirm_data.download --yes --max-budget 50` | Same, with a lower spending cap | Yes, once |
 | `python -m propfirm_data.validate` | Data-quality report, exits with an error if data is broken | No |
 | `python -m propfirm_data.crosscheck` | Compares the last 2 years with Massive | No (free tier) |
-| `python -m propfirm_backtest.search` | Strategy grid search on 2010-2021 (~5 min), freezes picks | No |
+| `python -m propfirm_backtest.search [--quick] [--folder=<tag>]` | Strategy 1 grid search on 2010-2021 (~5 min), freezes picks. `--quick` = small smoke-test grid. `--folder=v2` writes to `ema_vwap_v2/` (needed because `ema_vwap/` has an opened holdout) | No |
 | `python -m propfirm_backtest.holdout` | Tests frozen picks on 2022-today. **Runs once only** | No |
 | `python -m propfirm_data.eia_calendar` | Builds the EIA release slots to block (needed by strategies 2-5) | No |
 | `python -m propfirm_backtest.orb_search [--quick]` | Strategy 2: ORB grid, 1,056,000 configs (~25 min) | No |
 | `python -m propfirm_backtest.family_search zab\|crabel\|acd [--quick]` | Strategies 3-5: grid + selection (a few minutes each) | No |
 | `python -m propfirm_backtest.family_program` | Strategies 3-5 programme checks (after the three searches) | No |
 | `python -m propfirm_backtest.orb_holdout` / `family_holdout <name>` | Holdout of a frozen champion. **Runs once only**; the family version refuses if the champion failed the gates | No |
-| `python -m propfirm_backtest.audit scenarios` / `control` / `report` | Backtest audit: re-runs every search under other assumptions (~4 h), the planted-edge control, then the report | No |
+| `python -m propfirm_backtest.vwap_break_eval [--skip-neighbours]` | Strategy 6: third-party VWAP Break bot, published parameters (replicate + out of sample + neighbours) → `data/backtests/vwap_break/report.md` | No |
+| `python -m propfirm_backtest.audit scenarios [--quick]` / `control` / `report` | Backtest audit: re-runs every search under other assumptions (~4 h; `--quick` = small grids), the planted-edge control (~20 min), then the report | No |
 | `python -m propfirm_backtest.acd_signal_holdout --register` / `--run` | Freeze the ACD signal test (never reads 2022+), then run it **once only** | No |
 | `python -m pytest -q` | Runs all automatic tests | No |
 
@@ -313,26 +327,31 @@ Copy-paste prompts: [TRADING_BOT_GUIDE.md, Section 12](TRADING_BOT_GUIDE.md#12-w
 
 Full reports (local): `data/backtests/ema_vwap/report.md` (development), `holdout.md` (holdout), `results.csv` (all 6,144).
 
+**Re-run after the audit's rule fixes** (flat 16:09 ET, no 60-day Combine limit): same champion (60 min / EMA 21 / weekly VWAP / close-cross / New York), +$24/trade, +$4 with +1 tick, 40 of 6,144 settings profitable, **0 pass every gate** (p95 drawdown $3,090). Report: `data/backtests/ema_vwap_v2/report.md`. Development evidence only: the 2022+ holdout was already opened.
+
 ### Strategies 2-5: the opening-range family
 
-Same discipline as strategy 1: 1 CL, $4.02 fees + 1 tick slippage per side, ambiguous 1-minute fills resolved against us, targets need a 1-tick trade-through, EIA releases blocked ±15 min, flat by 16:00 ET (12:55 on CME short days, before contract expiry). Search on 2010–2021 only; one champion frozen per strategy. Every engine has a separate slow reference that matches it trade for trade; Codex reviewed each strategy and recomputed champion trades from the raw bars.
+Same discipline as strategy 1: 1 CL, $4.02 fees + 1 tick slippage per side, ambiguous 1-minute fills resolved against us, targets need a 1-tick trade-through, EIA releases blocked ±15 min, exit at the 16:09 ET open (Topstep closes positions at 16:10 ET; the planned live bot flattens earlier, at 3:05 PM CT = 16:05 ET), 12:55 ET on CME short days, before contract expiry. Combine attempts run up to 250 trading days (Topstep has no time limit); the p95-drawdown gate measures the first 60 days. Search on 2010–2021 only; one champion frozen per strategy. Every engine has a separate slow reference that matches it trade for trade; Codex reviewed each strategy and recomputed champion trades from the raw bars.
 
-| # | Strategy (2026-10-15) | Configs | Passed every gate | Best setting found (2010–2021) | Verdict |
+Numbers below are from the run after the [audit](#backtest-audit-are-the-fails-real-2026-10-16)'s rule fixes (2026-10-16). They replace the first run of 2026-10-15.
+
+| # | Strategy | Configs | Passed every gate | Champion (2010–2021) | Verdict |
 |---|---|---|---|---|---|
-| 2 | **ORB**: break of the opening range high/low | 1,056,000 | **0** | 09:00 ET, 60-min range, 5-min close entry: **+$19/trade**, PF 1.07, ~$0 with +1 tick | ❌ |
-| 3 | **ZAB-inspired**: first candle sets the side (Zarattini, Aziz, Barbon) | 3,456 | **0** | champion −$11/trade; never positive on the main settings | ❌ |
-| 4 | **Crabel**: stops at range ± stretch, NR4/NR7/inside-day setups | 7,200 | **0** | champion −$10/trade | ❌ |
-| 5 | **Fisher ACD**: A level held for a time, C reversal, pivot bias | 2,880 | **0** | 09:00 ET, 30-min range, pivot-aligned: **+$43/trade**, PF 1.22, **+$23 with +1 tick** | ❌ |
+| 2 | **ORB**: break of the opening range high/low | 1,056,000 | **0** | 09:00 ET, 60-min range, 5-min close entry, long only: **+$20/trade**, PF 1.08, +$4 with +1 tick | ❌ |
+| 3 | **ZAB-inspired**: first candle sets the side (Zarattini, Aziz, Barbon) | 3,456 | **0** | 09:00 ET, 5-min candle, breakout, long only: **+$26/trade**, PF 1.11, +$6 with +1 tick | ❌ |
+| 4 | **Crabel**: stops at range ± stretch, NR4/NR7/inside-day setups | 7,200 | **0** | London 08:00, 1-min range, inside-day setup: **+$85/trade**, PF 1.33, +$65 with +1 tick, only 381 trades in 12 years | ❌ |
+| 5 | **Fisher ACD**: A level held for a time, C reversal, pivot bias | 2,880 | **0** | 09:00 ET, 30-min range, pivot-aligned: **+$45/trade**, PF 1.23, +$25 with +1 tick | ❌ (2022+ holdout: edge not confirmed) |
 
-Strategies 3-5 were also judged as one programme (12,809 unique trade streams): no family champion qualified, so no holdout was opened (it would only spend the one look on a known FAIL).
+Strategies 3-5 were also judged as one programme (12,809 unique trade streams): no family champion qualified, so no full-strategy family holdout was opened (it would only spend the one look on a known FAIL). Later, the audit spent the ACD holdout on one pre-registered test of its entry signal (edge not confirmed); the ZAB and Crabel holdouts are still unopened.
 
 #### Lessons across strategies 1-5
 
-- **Drawdown is the wall, not direction.** Many settings pass every gate *except* the drawdown one: ORB 25, ZAB 15, Crabel 17, **ACD 167**. On 1 CL their worst-case 60-day drawdown is ~$2,100–3,300, above the $1,000 gate (half of Topstep's $2,000 limit). No ACD setting at all gets under $1,000.
-- **Micro contracts do not fix it.** Replaying champions at 1-5 MCL ($1/tick, $1.72 fee): fees eat the edge (ACD falls from $43 to $3-15 per trade) and the Combine target is rarely reached in 60 days.
+- **Drawdown is the wall, not direction.** Many settings pass every gate *except* the drawdown one: EMA 2, ORB 36, ZAB 12, Crabel 21, **ACD 206**. On 1 CL the champions' 60-day p95 drawdown is ~$2,300–3,100, above the $1,000 gate (half of Topstep's $2,000 limit). The audit's planted-edge test shows why: on 1 CL an edge needs ~$300/trade before it fits that budget.
+- **Micro contracts do not fix it.** Replaying champions at 1-5 MCL ($1/tick, $1.72 fee): fees eat the edge (ACD falls from $45 to $3-16 per trade; 1 MCL never reaches the $3,000 target within 250 days).
 - **Short side and bear market.** Most near-misses are short-only or short-heavy. 2010–2021 includes the 2014–15 and 2020 oil crashes, so part of that "edge" may simply be the trend of that period.
 - **What helped:** 09:00 ET (NYMEX open) and London 08:00 beat 08:30 and the 18:00 Globex open; longer ranges (30-60 min) beat 5 min; waiting for a close (or ACD's time acceptance) beat raw stop entries; holding to the session end beat short holds; wide stops beat fixed 15-20 ticks.
-- **Luck checks still say no:** walk-forward (picking each year from earlier years only) never found a qualifying setting; deflated Sharpe of the best ACD setting is 2.7% (needs 95%).
+- **Luck checks still say no:** walk-forward (picking each year from earlier years only) never found a qualifying setting; deflated Sharpe of the best ACD setting is 2.4% at all trials and 74.5% at the (optimistic) effective trial count (needs 95%).
+- **Selection luck is real:** ACD's champion, the strongest in-sample entry signal, did $27/trade *worse* than random entries on unseen 2022+ data (see the audit).
 
 Full reports (local): `data/backtests/{orb,zab,crabel,acd}/report.md`, `results.csv.gz` (every config), `champion_trades_dev.csv`, and `data/backtests/orb_families_program.md`.
 
@@ -351,7 +370,7 @@ The question: did strategies 1-5 fail because they have no edge, or because of a
 
 **What passed:**
 - **No look-ahead.** Cutting the data at random minutes, or replacing the future with a random path, changes no earlier decision in any engine. A deliberately planted leak is caught.
-- **Accounting.** Long+short pairs cost exactly 2 x (fee + slippage), to 1e-14. Mirrored prices turn every long-only config into the short-only one, trade for trade.
+- **Accounting.** Long+short pairs cost exactly 2 x (fee + 2 slips), to 1e-14. Mirrored prices turn every long-only config into the short-only one, trade for trade.
 - **Timezone/DST.** Volume spikes sit exactly at 09:00, Wed 10:30 and 14:28 ET in both summer and winter time.
 - **Data.** Daily closes match the official WTI spot (EIA via FRED) over 2010-2021, with a median gap of $0.03.
 - **Fees and rules** match the Topstep help center ($4.02 CL, $3,000 target, $2,000 MLL, 55% consistency).
@@ -369,11 +388,25 @@ The question: did strategies 1-5 fail because they have no edge, or because of a
 
 **Idea vs execution.** Each champion's entries were frozen and followed with no stop or target, against random entries at the same minute and side in the same weeks. ORB, ZAB and Crabel entries do **not** beat random entries, so better stops or targets cannot rescue them (with no drift, no exit rule creates profit). Stopped-out trades did not recover more often than random ones: the stops are not too tight.
 
-**The real wall is risk, not bugs.** Even a planted edge of ~$150/trade cannot pass the $1,000 p95-drawdown gate on 1 CL; it takes ~$300/trade. CL's normal noise on 1 contract puts the 60-day p95 drawdown at ~$2,300-3,000 for every champion.
+**The real wall is risk, not bugs.** Even a planted edge of ~$150/trade cannot pass the $1,000 p95-drawdown gate on 1 CL; it takes ~$300/trade. CL's normal noise on 1 contract puts the 60-day p95 drawdown at ~$2,300-3,100 for every champion.
 
 **ACD holdout: edge NOT confirmed (2026-10-16).** A pre-registered, once-only test of the ACD champion's entries on 2022+ data (575 signals) found no edge. At 60 minutes the entries did $27/trade *worse* than random entries in the same weeks (randomization p = 0.85). The full strategy with its own exits lost $58/trade (−$33,220). The in-sample drift was selection luck. Report: `data/backtests/acd/signal_holdout.md`. The ACD holdout is now spent.
 
-Full report (local): `data/backtests/audit/report.md`, trade charts `data/backtests/audit/trades_chart.html`. The tables above for strategies 1-5 are from the original run, before these fixes; strategy 1's new picks (`ema_vwap_v2`) have no clean holdout.
+Full report (local): `data/backtests/audit/report.md`, trade charts `data/backtests/audit/trades_chart.html`. The strategy 2-5 tables above already use the rule-fixed run. Strategy 1's re-run picks (`ema_vwap_v2`) have no clean holdout. Holdouts still unopened: ORB, ZAB, Crabel.
+
+### Strategy 6: third-party "CL VWAP Break" bot: ❌ FAILED (2026-10-16)
+
+**Source:** a shared write-up of a live TopstepX bot. It claims +$40,878 over 323 trades (PF 1.81) on 27 Jul - 15 Oct 2026, with parameters tuned on that same window. **Rules:** 5-min bars. C1 touches EMA20 or SMA50 (within 1.25 ticks). C2 clears the line, breaks C1, and closes within 0.5 ATR of the day VWAP. Stop entry 1 tick beyond C2, stop at C1's far end, target 2R (2.5R when ATR14 > 1.12 x ATR100). Scalp/far 1R variants. Optional 6 MCL add-on 32 ticks before the target. Size 1 CL + 2 MCL. Nothing was fitted here: their published values were run as-is, so 2010-06 .. 26 Jul 2026 is out of sample for them.
+
+| Finding | Result |
+|---|---|
+| Their window, our engine (slip 1) | 240 trades + 65 add-on legs (their 323 counts add-on fills), **+$16,379**, PF 1.39. Trade count matches; P&L is ~40% of theirs (their fill model is more generous) |
+| Out of sample 2010-06 .. 2026-07 (slip 1) | 25,914 trades, **-$40/trade, PF 0.64**, every year negative, long and short alike |
+| Same, zero fees and zero slippage (2018-2026) | PF 0.93: **no edge even before costs** |
+| Gates / Combine pass | 7 of 9 gates fail (with or without add-on); pass 1.8%, with the $1,000 DLL 1.8% |
+| Neighbours (16 one-step variants) | 0% profitable: not a fragile spike, uniformly negative |
+
+**Lesson:** a 2.5-month backtest with tuned parameters says nothing. Their window is a high-volatility regime with few small-stop "scalp" trades. Scalps are 70% of trades over 16 years, and they lose. Engine `vwap_break_engine.py` matches its slow reference trade for trade. Report (local): `data/backtests/vwap_break/report.md`, `trades_oos.csv.gz`.
 
 ---
 
@@ -397,6 +430,12 @@ Full report (local): `data/backtests/audit/report.md`, trade charts `data/backte
 | [TRADING_BOT_GUIDE.md](TRADING_BOT_GUIDE.md) | Topstep rules, CL basics, architecture, 7-phase roadmap, benchmarks, position sizing, Claude + Codex workflow, checklists |
 | [README_DATA.md](README_DATA.md) | Downloading, validating, and using the historical data |
 | `data/crosscheck/report.md` | Latest Databento vs Massive comparison. Local only (not committed), created by `crosscheck` |
+| `data/backtests/{ema_vwap,ema_vwap_v2,orb,zab,crabel,acd}/report.md` | Development report per strategy (gates, finalists, walk-forward, overfitting checks). Local only, created by the search commands |
+| `data/backtests/ema_vwap/holdout.md` | Strategy 1's once-only 2022+ holdout (original run). Local only |
+| `data/backtests/orb_families_program.md` | Strategies 3-5 judged as one programme (union DSR/PBO, Holm). Local only, created by `family_program` |
+| `data/backtests/vwap_break/report.md` | Strategy 6: replicate, out of sample, neighbours. Local only, created by `vwap_break_eval` |
+| `data/backtests/audit/report.md` | Backtest audit: checks, scenarios, positive control, idea vs execution. Local only, created by `audit report` |
+| `data/backtests/acd/signal_holdout.md` | The pre-registered ACD entry-signal holdout result (spent). Local only |
 
 ---
 
@@ -410,4 +449,4 @@ No license is granted yet. Unless a `LICENSE` file is added, all rights are rese
 
 ---
 
-*Rules and prices in these documents were verified on 2026-10-14. Prop-firm rules and data prices change. Always re-check the official Topstep help center before trading.*
+*Rules and prices in these documents were verified on 2026-10-14; the backtest audit re-checked the CL fee ($4.02), the $3,000 target, the $2,000 MLL, the 55% consistency target and the 3:10 PM CT close on 2026-10-15. Prop-firm rules and data prices change. Always re-check the official Topstep help center before trading.*
