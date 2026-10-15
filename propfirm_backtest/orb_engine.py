@@ -98,6 +98,7 @@ class Front:
         if len(self.tmin) > 1 and not (np.diff(self.tmin) > 0).all():
             raise ValueError("front-month minutes are not strictly increasing")
         self.open, self.high, self.low, self.close = m.open[idx], m.high[idx], m.low[idx], m.close[idx]
+        self.volume = m.volume[idx]
         self.contract = m.contract[idx]
         self.cut = m.roll_cutoff[idx]
         self.trading_day = m.trading_day[idx]
@@ -137,10 +138,11 @@ def local_tmin(days: np.ndarray, minute: int, tz: str, days_before: int = 0) -> 
 
 
 class DayTables:
-    """Per (anchor, range length) x trading day: range, entry start row, filters, session end."""
+    """Per (anchor, range length) x trading day: range, entry start row, filters, session end.
+    Also the range's first open, last close and volume (used by the ORB families)."""
 
-    def __init__(self, f: Front, days: np.ndarray, eia: pd.DataFrame | None):
-        self.keys = TABLE_KEYS
+    def __init__(self, f: Front, days: np.ndarray, eia: pd.DataFrame | None, keys=None):
+        self.keys = TABLE_KEYS if keys is None else keys
         n_t, n_d = len(self.keys), len(days)
         self.valid = np.zeros((n_t, n_d), dtype=np.bool_)
         self.hi = np.zeros((n_t, n_d))
@@ -148,6 +150,9 @@ class DayTables:
         self.e_idx = np.zeros((n_t, n_d), dtype=np.int64)
         self.rend = np.zeros((n_t, n_d), dtype=np.int64)
         self.ratio = np.full((n_t, n_d), np.nan)
+        self.ropen = np.zeros((n_t, n_d))
+        self.rclose = np.zeros((n_t, n_d))
+        self.rvol = np.zeros((n_t, n_d))
         self.sess_end = session_end(f, days)
         self.blocks = eia_blocks(eia, days)
         cut_cum = np.concatenate([[0], np.cumsum(f.cut)])
@@ -167,6 +172,9 @@ class DayTables:
                 bounds = np.column_stack([i[ok], j[ok]]).ravel()  # windows are disjoint and sorted
                 self.hi[t, ok] = np.maximum.reduceat(f.high, bounds)[::2]
                 self.lo[t, ok] = np.minimum.reduceat(f.low, bounds)[::2]
+                self.rvol[t, ok] = np.add.reduceat(f.volume, bounds)[::2]
+                self.ropen[t, ok] = f.open[i[ok]]
+                self.rclose[t, ok] = f.close[j[ok] - 1]
             self.valid[t] = ok
             self.e_idx[t] = np.where(ok, j, 0)
             self.ratio[t] = width_ratio(self.hi[t] - self.lo[t], ok)
@@ -263,18 +271,89 @@ def _blocked(blk, tm):
     return False
 
 
+# --- fill / exit helpers shared by every ORB-family simulator ------------------------------------
+
+@njit(cache=True)
+def stop_order_fill(o_j, level, d, slip):
+    """Resting stop order at `level` (direction d) triggered this minute."""
+    return (o_j if d * (o_j - level) >= 0 else level) + d * slip
+
+
+@njit(cache=True)
+def stop_entry_minute(h_j, l_j, d, fill, stop, slip, pessimistic):
+    """The minute a STOP-order entry filled (mid-minute, order of prices unknown).
+    Returns (stopped out in this minute, MAE in ticks)."""
+    worst = l_j if d == 1 else h_j
+    mae = max(0.0, d * (fill - worst))
+    touched = (d == 1 and l_j <= stop) or (d == -1 and h_j >= stop)
+    if pessimistic and touched:
+        return True, d * (fill - stop) + slip
+    if not pessimistic:
+        mae = min(mae, d * (fill - stop) + slip)
+    return False, mae
+
+
+@njit(cache=True)
+def hold_minute(o_j, h_j, l_j, tm, cut_j, flat, check_flat, d, fill, stop, tgt, target_on, mae, slip,
+                pessimistic):
+    """One minute while holding. Returns (exit reason or 0, exit price, MAE).
+    Order: flat/cutoff at the open; stop gapped through; target gapped through (needs 1 tick through,
+    filled at the target); then intraminute stop vs target (stop wins when pessimistic)."""
+    if check_flat and (tm >= flat or cut_j):
+        return (EXIT_CUTOFF if cut_j and tm < flat else EXIT_TIME), o_j - d * slip, mae
+    if d * (o_j - stop) <= 0:
+        return EXIT_STOP, o_j - d * slip, max(mae, d * (fill - o_j))
+    if target_on and d * (o_j - tgt) >= 1.0:
+        return EXIT_TARGET, tgt, mae
+    s_hit = (d == 1 and l_j <= stop) or (d == -1 and h_j >= stop)
+    t_hit = target_on and ((d == 1 and h_j >= tgt + 1.0) or (d == -1 and l_j <= tgt - 1.0))
+    worst = l_j if d == 1 else h_j
+    if s_hit and (not t_hit or pessimistic):
+        return EXIT_STOP, stop - d * slip, max(mae, d * (fill - stop))
+    if t_hit:
+        return EXIT_TARGET, tgt, max(mae, d * (fill - worst))
+    return 0, np.nan, max(mae, d * (fill - worst))
+
+
+@njit(cache=True)
+def breakeven_stop(h_j, l_j, d, fill, stop, be_lvl):
+    """(new stop, triggered): once price reaches be_lvl the stop moves to the fill (next minute on)."""
+    best = h_j if d == 1 else l_j
+    if d * (best - be_lvl) >= 0:
+        return (fill if d * (fill - stop) > 0 else stop), True
+    return stop, False
+
+
+@njit(cache=True)
+def record(n, r_in, r_out, r_dir, r_pin, r_pout, r_mae, r_why, entry_j, j, d, fill, px, mae, why):
+    r_in[n] = entry_j; r_out[n] = j; r_dir[n] = d; r_pin[n] = fill
+    r_pout[n] = px; r_mae[n] = mae; r_why[n] = why
+    return n + 1
+
+
+@njit(cache=True)
+def range_stop(stop_type, d, hi, lo, fill, stop_ticks):
+    if stop_type == MID:
+        mid = (hi + lo) / 2.0
+        return np.floor(mid) if d == 1 else np.ceil(mid)
+    if stop_type == OPPOSITE:
+        return lo - 1.0 if d == 1 else hi + 1.0
+    return fill - d * stop_ticks
+
+
 @njit(cache=True)
 def sim_day(e, rend, hi, lo, flat, deadline, blk,
             tmin, o, h, l, c, con, cut,
             trigger, buf, stop_type, stop_ticks, target_r, dirpol, be, slip, pessimistic,
             r_in, r_out, r_dir, r_pin, r_pout, r_mae, r_why):
-    """Simulate one day. Writes up to 2 trades into the r_* arrays; returns the count."""
+    """Simulate one classic-ORB day. Writes up to 2 trades into the r_* arrays; returns the count."""
     nF = len(tmin)
     lvl_long = hi + 1.0 + buf
     lvl_short = lo - 1.0 - buf
     used_long = dirpol == SHORT
     used_short = dirpol == LONG
     max_tr = 2 if dirpol == BOTH2 else 1
+    target_on = target_r > 0
     c0 = con[e]
     n = 0
     pos = 0
@@ -300,18 +379,12 @@ def sim_day(e, rend, hi, lo, flat, deadline, blk,
                 pend = 0
                 if tm < deadline and not cut[j] and not _blocked(blk, tm):
                     fill = o[j] + d * slip
-                    if stop_type == MID:
-                        mid = (hi + lo) / 2.0
-                        stop = np.floor(mid) if d == 1 else np.ceil(mid)
-                    elif stop_type == OPPOSITE:
-                        stop = lo - 1.0 if d == 1 else hi + 1.0
-                    else:
-                        stop = fill - d * stop_ticks
+                    stop = range_stop(stop_type, d, hi, lo, fill, stop_ticks)
                     r = d * (fill - stop)
                     if r >= 1.0:
                         pos = d
                         entry_j = j
-                        tgt = fill + d * np.ceil(target_r * r) if target_r > 0 else 0.0
+                        tgt = fill + d * np.ceil(target_r * r) if target_on else 0.0
                         be_lvl = fill + d * r
                         be_on = False
                         mae = 0.0
@@ -336,18 +409,8 @@ def sim_day(e, rend, hi, lo, flat, deadline, blk,
                         if cut[j] or _blocked(blk, tm):
                             j += 1
                             continue
-                        lvl = lvl_long if d == 1 else lvl_short
-                        if d * (o[j] - lvl) >= 0:
-                            fill = o[j] + d * slip  # gapped through the stop order
-                        else:
-                            fill = lvl + d * slip
-                        if stop_type == MID:
-                            mid = (hi + lo) / 2.0
-                            stop = np.floor(mid) if d == 1 else np.ceil(mid)
-                        elif stop_type == OPPOSITE:
-                            stop = lo - 1.0 if d == 1 else hi + 1.0
-                        else:
-                            stop = fill - d * stop_ticks
+                        fill = stop_order_fill(o[j], lvl_long if d == 1 else lvl_short, d, slip)
+                        stop = range_stop(stop_type, d, hi, lo, fill, stop_ticks)
                         r = d * (fill - stop)
                         if r < 1.0:
                             j += 1
@@ -355,21 +418,16 @@ def sim_day(e, rend, hi, lo, flat, deadline, blk,
                         pos = d
                         entry_j = j
                         last_j = j
-                        tgt = fill + d * np.ceil(target_r * r) if target_r > 0 else 0.0
+                        tgt = fill + d * np.ceil(target_r * r) if target_on else 0.0
                         be_lvl = fill + d * r
                         be_on = False
-                        worst = l[j] if d == 1 else h[j]
-                        mae = max(0.0, d * (fill - worst))
-                        stop_touched = (d == 1 and l[j] <= stop) or (d == -1 and h[j] >= stop)
-                        if pessimistic and stop_touched:
-                            r_in[n] = entry_j; r_out[n] = j; r_dir[n] = d; r_pin[n] = fill
-                            r_pout[n] = stop - d * slip; r_mae[n] = d * (fill - stop) + slip; r_why[n] = EXIT_STOP
-                            n += 1
+                        stopped, mae = stop_entry_minute(h[j], l[j], d, fill, stop, slip, pessimistic)
+                        if stopped:
+                            n = record(n, r_in, r_out, r_dir, r_pin, r_pout, r_mae, r_why,
+                                       entry_j, j, d, fill, stop - d * slip, mae, EXIT_STOP)
                             pos = 0
                             if dirpol != BOTH2 or n >= max_tr:
                                 break
-                        elif not pessimistic:
-                            mae = min(mae, d * (fill - stop) + slip)
                     j += 1
                     continue
                 else:
@@ -394,57 +452,22 @@ def sim_day(e, rend, hi, lo, flat, deadline, blk,
         # holding
         d = pos
         last_j = j
-        if not just_filled and (tm >= flat or cut[j]):
-            r_in[n] = entry_j; r_out[n] = j; r_dir[n] = d; r_pin[n] = fill
-            r_pout[n] = o[j] - d * slip; r_mae[n] = mae
-            r_why[n] = EXIT_CUTOFF if cut[j] and tm < flat else EXIT_TIME
-            n += 1
-            pos = 0
-            break
-        exit_px = np.nan
-        why = 0
-        if d * (o[j] - stop) <= 0:  # gapped through the stop
-            exit_px = o[j] - d * slip
-            mae = max(mae, d * (fill - o[j]))
-            why = EXIT_STOP
-        elif target_r > 0 and d * (o[j] - tgt) >= 1.0:  # trade-through rule applies to opens too
-            exit_px = tgt
-            why = EXIT_TARGET
-        else:
-            s_hit = (d == 1 and l[j] <= stop) or (d == -1 and h[j] >= stop)
-            t_hit = target_r > 0 and ((d == 1 and h[j] >= tgt + 1.0) or (d == -1 and l[j] <= tgt - 1.0))
-            if s_hit and (not t_hit or pessimistic):
-                exit_px = stop - d * slip
-                mae = max(mae, d * (fill - stop))
-                why = EXIT_STOP
-            elif t_hit:
-                exit_px = tgt
-                worst = l[j] if d == 1 else h[j]
-                mae = max(mae, d * (fill - worst))
-                why = EXIT_TARGET
+        why, px, mae = hold_minute(o[j], h[j], l[j], tm, cut[j], flat, not just_filled, d, fill, stop, tgt,
+                                   target_on, mae, slip, pessimistic)
         if why != 0:
-            r_in[n] = entry_j; r_out[n] = j; r_dir[n] = d; r_pin[n] = fill
-            r_pout[n] = exit_px; r_mae[n] = mae; r_why[n] = why
-            n += 1
+            n = record(n, r_in, r_out, r_dir, r_pin, r_pout, r_mae, r_why, entry_j, j, d, fill, px, mae, why)
             pos = 0
             if why != EXIT_STOP or dirpol != BOTH2 or n >= max_tr:
                 break
             j += 1
             continue
-        worst = l[j] if d == 1 else h[j]
-        mae = max(mae, d * (fill - worst))
         if be and not be_on:
-            best = h[j] if d == 1 else l[j]
-            if d * (best - be_lvl) >= 0:
-                be_on = True
-                if d * (fill - stop) > 0:
-                    stop = fill  # takes effect from the next minute
+            stop, be_on = breakeven_stop(h[j], l[j], d, fill, stop, be_lvl)
         j += 1
 
     if pos != 0:  # window ran out without a flat minute (contract change / end of data)
-        r_in[n] = entry_j; r_out[n] = last_j; r_dir[n] = pos; r_pin[n] = fill
-        r_pout[n] = c[last_j] - pos * slip; r_mae[n] = mae; r_why[n] = EXIT_FALLBACK
-        n += 1
+        n = record(n, r_in, r_out, r_dir, r_pin, r_pout, r_mae, r_why,
+                   entry_j, last_j, pos, fill, c[last_j] - pos * slip, mae, EXIT_FALLBACK)
     return n
 
 
@@ -468,10 +491,11 @@ def _day_allowed(width_mode, ratio):
 
 
 @njit(cache=True)
-def _cfg_day(cfg, d, valid, hi, lo, e_idx, rend, ratio, sess_end, blocks,
-             tmin, o, h, l, c, con, cut, slip, pessimistic,
-             r_in, r_out, r_dir, r_pin, r_pout, r_mae, r_why):
-    """Trades of one config on day d (0 if the day is not traded). Shared by every kernel."""
+def orb_day(cfg, d, tables, minutes, slip, pessimistic, r_in, r_out, r_dir, r_pin, r_pout, r_mae, r_why):
+    """Classic ORB day function: trades of one config on day d (0 if the day is not traded).
+    Every family has a day function with this signature; the kernels below take it as an argument."""
+    valid, hi, lo, e_idx, rend, ratio, sess_end, blocks = tables
+    tmin, o, h, l, c, con, cut = minutes
     tb = cfg[C_TABLE]
     if not valid[tb, d] or sess_end[d] < 0 or not _day_allowed(cfg[C_WIDTH], ratio[tb, d]):
         return 0
@@ -487,9 +511,8 @@ def _cfg_day(cfg, d, valid, hi, lo, e_idx, rend, ratio, sess_end, blocks,
 
 # --- one config: full trade list ----------------------------------------------------------------
 
-@njit(cache=True)
-def run_trades(cfg, n_days, valid, hi, lo, e_idx, rend, ratio, sess_end, blocks,
-               tmin, o, h, l, c, con, cut, slip, pessimistic):
+@njit(cache=False)
+def run_trades(day_fn, cfg, n_days, tables, minutes, slip, pessimistic):
     """All trades of one config. Returns (day, in_row, out_row, dir, px_in, px_out, mae, why)."""
     cap = 2 * n_days + 2
     t_day = np.empty(cap, np.int64); t_in = np.empty(cap, np.int64); t_out = np.empty(cap, np.int64)
@@ -499,9 +522,7 @@ def run_trades(cfg, n_days, valid, hi, lo, e_idx, rend, ratio, sess_end, blocks,
     r_pin = np.empty(2); r_pout = np.empty(2); r_mae = np.empty(2); r_why = np.empty(2, np.int8)
     k = 0
     for d in range(n_days):
-        nt = _cfg_day(cfg, d, valid, hi, lo, e_idx, rend, ratio, sess_end, blocks,
-                      tmin, o, h, l, c, con, cut, slip, pessimistic,
-                      r_in, r_out, r_dir, r_pin, r_pout, r_mae, r_why)
+        nt = day_fn(cfg, d, tables, minutes, slip, pessimistic, r_in, r_out, r_dir, r_pin, r_pout, r_mae, r_why)
         for q in range(nt):
             t_day[k] = d; t_in[k] = r_in[q]; t_out[k] = r_out[q]; t_dir[k] = r_dir[q]
             t_pin[k] = r_pin[q]; t_pout[k] = r_pout[q]; t_mae[k] = r_mae[q]; t_why[k] = r_why[q]
@@ -547,9 +568,8 @@ def _bootstrap(day_pnl, day_low, n_use, u, block):
 
 
 @njit(cache=False, parallel=True)
-def grid_kernel(cfgs, n_days, year_of_day, n_years, fold_ends, hash_w,
-                valid, hi, lo, e_idx, rend, ratio, sess_end, blocks,
-                tmin, o, h, l, c, con, cut, slip, pessimistic, u, u_wf, block, score):
+def grid_kernel(day_fn, cfgs, n_days, year_of_day, n_years, fold_ends, hash_w,
+                tables, minutes, slip, pessimistic, u, u_wf, block, score):
     """Metrics for every config on days [0, n_days).
     Returns (metrics [n_cfg, N_M], yearly P&L [n_cfg, n_years], yearly trades, yearly best day,
              walk-forward fold scores [n_cfg, n_folds, 2] = pass prob, p95 drawdown on the fold prefix).
@@ -569,9 +589,8 @@ def grid_kernel(cfgs, n_days, year_of_day, n_years, fold_ends, hash_w,
         day_low = np.zeros(n_days)
         trades = 0; wins = 0; gw = 0.0; gl = 0.0; streak = 0; worst_streak = 0; stops = 0; falls = 0
         for d in range(n_days):
-            nt = _cfg_day(cfg, d, valid, hi, lo, e_idx, rend, ratio, sess_end, blocks,
-                          tmin, o, h, l, c, con, cut, slip, pessimistic,
-                          r_in, r_out, r_dir, r_pin, r_pout, r_mae, r_why)
+            nt = day_fn(cfg, d, tables, minutes, slip, pessimistic,
+                        r_in, r_out, r_dir, r_pin, r_pout, r_mae, r_why)
             if nt == 0:
                 continue
             y = year_of_day[d]
@@ -618,22 +637,23 @@ def grid_kernel(cfgs, n_days, year_of_day, n_years, fold_ends, hash_w,
 
 
 @njit(cache=False, parallel=True)
-def daily_kernel(cfgs, n_days, valid, hi, lo, e_idx, rend, ratio, sess_end, blocks,
-                 tmin, o, h, l, c, con, cut, slip, pessimistic):
+def daily_kernel(day_fn, cfgs, n_days, tables, minutes, slip, pessimistic):
     """Daily P&L and intraday low per config (for the small sets that need full series)."""
     n_cfg = cfgs.shape[0]
     out_pnl = np.zeros((n_cfg, n_days))
     out_low = np.zeros((n_cfg, n_days))
     for i in prange(n_cfg):
-        t = run_trades(cfgs[i], n_days, valid, hi, lo, e_idx, rend, ratio, sess_end, blocks,
-                       tmin, o, h, l, c, con, cut, slip, pessimistic)
+        t = run_trades(day_fn, cfgs[i], n_days, tables, minutes, slip, pessimistic)
         out_pnl[i], out_low[i] = P.daily_series(t[0], trade_pnl(t[3], t[4], t[5]),
                                                 t[6] * P.TICK_USD + P.FEE_USD, n_days)
     return out_pnl, out_low
 
 
 class Market:
-    """Everything the kernels need, built once."""
+    """Everything the classic-ORB kernels need, built once. Families subclass it and swap
+    `day_fn` / `day_args`."""
+
+    day_fn = orb_day
 
     def __init__(self, m, days: np.ndarray, eia: pd.DataFrame | None, strict_expiry=False):
         self.f = Front(m, strict_expiry)
@@ -651,7 +671,7 @@ class Market:
 
     def trades(self, cfg, n_days=None, slip=1.0, pessimistic=True):
         n_days = len(self.days) if n_days is None else n_days
-        t = run_trades(np.asarray(cfg, np.int64), n_days, *self.day_args(), *self.minute_args(),
+        t = run_trades(self.day_fn, np.asarray(cfg, np.int64), n_days, self.day_args(), self.minute_args(),
                        float(slip), pessimistic)
         if len(t[1]) and (self.f.contract[t[1]] != self.f.contract[t[2]]).any():  # roll-safety invariant
             raise RuntimeError("trade entry and exit on different contracts: engine bug")

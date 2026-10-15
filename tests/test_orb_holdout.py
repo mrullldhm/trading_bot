@@ -35,7 +35,7 @@ def write_frozen(out: Path, **over):
 
 
 def test_preflight_refuses_without_touching_the_marker(tmp_path, monkeypatch):
-    monkeypatch.setattr(O, "source_hash", lambda: "abc")
+    monkeypatch.setattr(O, "source_hash", lambda family=None: "abc")
     assert H.preflight(tmp_path / "none")[1] == 1  # no picks
     write_frozen(tmp_path / "q", quick=True)
     assert H.preflight(tmp_path / "q")[1] == 1
@@ -68,3 +68,36 @@ def test_evaluate_writes_trades_raw_numbers_and_report(tmp_path):
     mk = E.Market(m, np.unique(m.trading_day[m.front]), eia)
     t = mk.trades(c)
     assert np.allclose(trades["entry_ticks"], t[4]) and np.allclose(trades["exit_ticks"], t[5])
+
+
+def test_family_holdout_lower_bound_and_refusal(tmp_path, monkeypatch):
+    from propfirm_backtest import family_holdout as FH
+    rng = np.random.default_rng(0)
+    lb, tail = FH.bootstrap_summary(rng.normal(50, 100, 600))
+    assert lb > 0 and tail < 0.01
+    lb, tail = FH.bootstrap_summary(rng.normal(-5, 100, 600))
+    assert lb < 0 and tail > 0.5
+    monkeypatch.setattr(O, "source_hash", lambda family=None: "abc")
+    fam = FH.FAMILIES["zab"]
+    monkeypatch.setattr(type(fam), "out_dir", property(lambda self: tmp_path))
+    write_frozen(tmp_path, champion_eligible=False)
+    monkeypatch.setattr(sys, "argv", ["family_holdout", "zab"])
+    assert FH.main() == 4
+    assert not (tmp_path / "holdout_opened.json").exists()
+
+
+def test_family_verdict_needs_trades_and_a_positive_lower_bound():
+    from types import SimpleNamespace
+    from propfirm_backtest import family_holdout as FH
+    cal = SimpleNamespace(n_dev=2, days=np.arange(400))
+    n = 300  # one trade a day on holdout days 2..301, each +$50 gross (5 ticks) before the $4.02 fee
+    t = (np.arange(2, 2 + n), None, None, np.ones(n), np.full(n, 100.0), np.full(n, 105.0), None, None)
+    daily = FH.holdout_daily_pnl(t, cal)
+    assert len(daily) == 398 and daily[:n].tolist() == [pytest.approx(45.98)] * n and daily[n:].sum() == 0
+    ho = {**HOLDOUT_OK, "trades": n}
+    assert FH.family_verdict(FROZEN_OK, ho, t, cal)[0] == "PASS"
+    assert ho["mean_daily_pnl_lower_bound"] > 0 and ho["p_value"] == 0.0
+    few = tuple(x[:50] if x is not None else None for x in t)
+    assert FH.family_verdict(FROZEN_OK, {**HOLDOUT_OK, "trades": 50}, few, cal)[0] == "FAIL"
+    losing = (t[0], None, None, -np.ones(n), t[4], t[5], None, None)
+    assert FH.family_verdict(FROZEN_OK, {**HOLDOUT_OK, "trades": n}, losing, cal)[0] == "FAIL"

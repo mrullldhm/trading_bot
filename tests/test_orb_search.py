@@ -142,3 +142,43 @@ def test_deflated_sharpe_penalises_more_trials():
     daily = rng.normal(20, 300, 2500)
     few, many = O.deflated_sharpe(daily, 0.001, 10), O.deflated_sharpe(daily, 0.001, 1_000_000)
     assert 0 <= many < few <= 1
+
+
+def test_holm_and_nomination():
+    from propfirm_backtest import family_program as FP
+    assert FP.holm({"a": 0.01, "b": 0.04, "c": 0.5}, alpha=0.10) == {"a": True, "b": True, "c": False}
+    assert FP.holm({"a": 0.06, "b": 0.07}, alpha=0.10) == {"a": False, "b": False}  # 0.06 > 0.10/2
+    assert FP.holm({"a": 0.04}, alpha=0.10, m=3) == {"a": False}  # programme of 3: 0.04 > 0.10/3
+    assert FP.holm({"a": 0.03}, alpha=0.10, m=3) == {"a": True}
+    import pandas as pd
+    fr = {"x": {"champion_eligible": True}, "y": {"champion_eligible": False}, "z": {"champion_eligible": True}}
+    res = {"x": pd.DataFrame({"score": [0.3]}), "y": pd.DataFrame({"score": [0.9]}), "z": pd.DataFrame({"score": [0.4]})}
+    assert FP.nominate(fr, res) == "z"
+    assert FP.nominate({"y": fr["y"]}, {"y": res["y"]}) is None
+
+
+def test_micro_stats_scale_and_fees():
+    t = (np.array([0, 1]), None, None, np.array([1, -1]), np.array([100.0, 200.0]), np.array([110.0, 190.0]),
+         np.array([3.0, 4.0]), None)
+    st = O.micro_stats(t, 2, 3)
+    assert st["expectancy_usd"] == pytest.approx(3 * (10 * O.MCL_TICK_USD - O.MCL_FEE_USD))
+
+
+
+@pytest.mark.parametrize("name", ["zab", "crabel", "acd"])
+def test_family_grid_rows_map_to_their_tables_and_survive_csv(name, tmp_path):
+    import pandas as pd
+    from propfirm_backtest import family_program as FP
+    from propfirm_backtest import family_search as FS
+    from propfirm_backtest import orb_family_engine as FE
+    fam = FS.FAMILIES[name]
+    g = O.Grid(family=fam)
+    keys = [(a, L) for a in FE.FAMILY_ANCHORS for L in fam.market.RANGE_LENGTHS]
+    got = [keys[t] for t in g.cfg[:, 0]]
+    want = list(zip(g.labels["anchor"], g.labels["range_min"]))
+    assert got == want
+    assert (g.cfg[:, 1] == [FE.anchor_row(a) for a in g.labels["anchor"]]).all()
+    path = tmp_path / "r.csv.gz"
+    g.labels.iloc[::-1].to_csv(path, index=False)
+    back = pd.read_csv(path)
+    assert (FP.locate(g, back) == np.arange(g.n)[::-1]).all()

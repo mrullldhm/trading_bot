@@ -274,9 +274,9 @@ def test_kernels_match_trade_list_metrics():
     fold_ends = np.array([n // 2, n], np.int64)
     u = np.random.default_rng(0).random((200, 13))
     hash_w = np.random.default_rng(1).random(n)
-    met, ypnl, ytr, ybest, wf = E.grid_kernel(cfgs, n, years, 2, fold_ends, hash_w, *mk.day_args(),
-                                              *mk.minute_args(), 1.0, True, u, u, 5, True)
-    dpnl, dlow = E.daily_kernel(cfgs, n, *mk.day_args(), *mk.minute_args(), 1.0, True)
+    met, ypnl, ytr, ybest, wf = E.grid_kernel(mk.day_fn, cfgs, n, years, 2, fold_ends, hash_w, mk.day_args(),
+                                              mk.minute_args(), 1.0, True, u, u, 5, True)
+    dpnl, dlow = E.daily_kernel(mk.day_fn, cfgs, n, mk.day_args(), mk.minute_args(), 1.0, True)
     M = {k: i for i, k in enumerate(E.M_NAMES)}
     for i, c in enumerate(cfgs):
         t = mk.trades(c)

@@ -29,8 +29,10 @@ import math
 import sys
 import time
 import warnings
+from dataclasses import dataclass, field
 from pathlib import Path
 from statistics import NormalDist
+from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -44,7 +46,7 @@ from . import orb_engine as E
 from . import propsim as P
 from . import search as S
 
-OUT_DIR = DATA_DIR / "backtests" / "orb"
+OUT_DIR = DATA_DIR / "backtests" / "orb"  # classic ORB (orb_holdout.py)
 DEV_END = S.DEV_END
 BASE_SLIP, GATE_SLIP = 1.0, 2.0
 STRESS_SLIPS = [3.0, 4.0]
@@ -68,6 +70,8 @@ GATES = {
     "max_p95_drawdown": 1000.0,
     "min_neighbours_profitable": 0.6,
 }
+MCL_TICK_USD, MCL_FEE_USD = 1.0, 1.72  # micro crude: $1/tick; TopstepX round turn (verify)
+MICRO_SIZES = [1, 3, 5]
 WF_MIN_TRADES = 100  # early folds have only 3-4 years: absolute floor + the same per-year rate
 
 # dimension -> levels (labels). Order = axis order of the dense grid.
@@ -84,7 +88,6 @@ DIMS = {
     "width": ["none", "skip_wide", "skip_narrow", "mid_only"],
     "breakeven": ["off", "on"],
 }
-KEYS = list(DIMS)
 TRIGGER_CODE = {"stop": E.STOP, "close1": E.CLOSE1, "close5": E.CLOSE5}
 STOP_CODE = {"mid": (E.MID, 0), "opposite": (E.OPPOSITE, 0), "15": (E.FIXED, 15), "20": (E.FIXED, 20),
              "30": (E.FIXED, 30)}
@@ -102,45 +105,26 @@ NEIGHBOURS = {
 # --- grid -------------------------------------------------------------------------------------
 
 class Grid:
-    """Dense full-factorial grid. Configs with flat +60 and window 120 equal window 60 (the entry
-    deadline is capped at the flat time), so they are not run: `twin` maps them to it."""
+    """Dense full-factorial grid of one strategy family. Duplicate configs (identical by
+    construction, e.g. ORB's window 120 under flat +60) are not run: `twin` maps them to the one that is."""
 
-    def __init__(self, dims=DIMS):
-        self.dims = dims
-        self.shape = tuple(len(v) for v in dims.values())
-        idx = np.indices(self.shape).reshape(len(self.shape), -1).T  # level index per dim
-        self.idx = idx
-        self.n = len(idx)
-        lv = {k: np.asarray(v, dtype=object)[idx[:, a]] for a, (k, v) in enumerate(dims.items())}
-        self.labels = pd.DataFrame(lv)
-        flat = np.array([FLAT_MIN[x] for x in lv["flat"]])
-        window = lv["window_min"].astype(np.int64)
-        dup = (flat != E.SESSION) & (window > flat)
-        twin = np.arange(self.n)
-        if dup.any():
-            w_axis = KEYS.index("window_min")
-            fixed = idx[dup].copy()
-            w_levels = list(dims["window_min"])
-            fixed[:, w_axis] = [max(i for i, w in enumerate(w_levels) if w <= f) for f in flat[dup]]
-            twin[dup] = np.ravel_multi_index(fixed.T, self.shape)
-        self.twin = twin
-        self.canonical = twin == np.arange(self.n)
-        self.cfg = self._cfg_matrix()
+    def __init__(self, dims=None, family=None):
+        self.family = family or ORB
+        self.dims = dims or self.family.dims
+        self.keys = list(self.dims)
+        self.shape = tuple(len(v) for v in self.dims.values())
+        self.idx = np.indices(self.shape).reshape(len(self.shape), -1).T  # level index per dim
+        self.n = len(self.idx)
+        self.labels = pd.DataFrame({k: np.asarray(v, dtype=object)[self.idx[:, a]]
+                                    for a, (k, v) in enumerate(self.dims.items())})
+        self.twin = self.family.twins(self) if self.family.twins else np.arange(self.n)
+        self.canonical = self.twin == np.arange(self.n)
+        self.cfg = self.family.cfg_matrix(self)
         self.neighbours = neighbour_index(self)
 
-    def _cfg_matrix(self):
-        """Engine config rows (orb_engine C_* columns), mapped per level then indexed (fast)."""
-        def col(dim, code):
-            return np.array([code(v) for v in self.dims[dim]], dtype=np.int64)[self.idx[:, KEYS.index(dim)]]
-        anchor, length = self.idx[:, KEYS.index("anchor")], self.idx[:, KEYS.index("range_min")]
-        table_of = np.array([[E.TABLE_KEYS.index((a, L)) for L in self.dims["range_min"]] for a in self.dims["anchor"]])
-        return np.column_stack([
-            table_of[anchor, length],
-            col("trigger", TRIGGER_CODE.get), col("buffer", int),
-            col("stop", lambda v: STOP_CODE[v][0]), col("stop", lambda v: STOP_CODE[v][1]),
-            col("target", TARGET_X10.get), col("window_min", int), col("flat", FLAT_MIN.get),
-            col("direction", DIR_CODE.get), col("width", WIDTH_CODE.get), col("breakeven", lambda v: int(v == "on")),
-        ])
+    def level_codes(self, dim, code) -> np.ndarray:
+        """Per config: code(level) of dimension `dim` (mapped per level, then indexed: fast)."""
+        return np.array([code(v) for v in self.dims[dim]], dtype=np.int64)[self.idx[:, self.keys.index(dim)]]
 
     def spread(self, values: np.ndarray) -> np.ndarray:
         """Values computed for canonical configs -> every dense config (duplicates copy their twin)."""
@@ -150,11 +134,40 @@ class Grid:
         return out
 
 
+def orb_twins(grid: Grid) -> np.ndarray:
+    """Classic ORB: with flat +60, an entry window of 120 equals 60 (deadline capped at the flat time)."""
+    flat = grid.level_codes("flat", FLAT_MIN.get)
+    window = grid.level_codes("window_min", int)
+    dup = (flat != E.SESSION) & (window > flat)
+    twin = np.arange(grid.n)
+    if dup.any():
+        w_axis = grid.keys.index("window_min")
+        fixed = grid.idx[dup].copy()
+        w_levels = list(grid.dims["window_min"])
+        fixed[:, w_axis] = [max(i for i, w in enumerate(w_levels) if w <= f) for f in flat[dup]]
+        twin[dup] = np.ravel_multi_index(fixed.T, grid.shape)
+    return twin
+
+
+def orb_cfg_matrix(grid: Grid) -> np.ndarray:
+    """Engine config rows (orb_engine C_* columns)."""
+    anchor, length = grid.idx[:, grid.keys.index("anchor")], grid.idx[:, grid.keys.index("range_min")]
+    table_of = np.array([[E.TABLE_KEYS.index((a, L)) for L in grid.dims["range_min"]] for a in grid.dims["anchor"]])
+    col = grid.level_codes
+    return np.column_stack([
+        table_of[anchor, length],
+        col("trigger", TRIGGER_CODE.get), col("buffer", int),
+        col("stop", lambda v: STOP_CODE[v][0]), col("stop", lambda v: STOP_CODE[v][1]),
+        col("target", TARGET_X10.get), col("window_min", int), col("flat", FLAT_MIN.get),
+        col("direction", DIR_CODE.get), col("width", WIDTH_CODE.get), col("breakeven", lambda v: int(v == "on")),
+    ])
+
+
 def neighbour_index(grid: Grid) -> np.ndarray:
     """(n, k) neighbour config per ordinal move, mapped to its canonical twin; -1 = none.
     A neighbour that is the config itself (via a duplicate twin) or repeats another one is dropped."""
     moves = []
-    for dim, rule in NEIGHBOURS.items():
+    for dim, rule in grid.family.neighbours.items():
         if dim not in grid.dims:
             continue
         ax = list(grid.dims).index(dim)
@@ -201,9 +214,9 @@ def lower_bound(p: np.ndarray, n: int) -> np.ndarray:
 class Dev:
     """Development data, calendar and shared random numbers."""
 
-    def __init__(self, m, cal):
+    def __init__(self, m, cal, family=None):
         self.m, self.cal = m, cal
-        self.mk = E.Market(m, cal.days, load_releases(), strict_expiry=True)
+        self.mk = (family or ORB).market(m, cal.days, load_releases(), strict_expiry=True)
         self.n = cal.n_dev
         self.years = np.unique(cal.years[:self.n])
         self.year_of_day = np.searchsorted(self.years, cal.years[:self.n]).astype(np.int64)
@@ -214,13 +227,13 @@ class Dev:
         self.hash_w = rng.random(self.n)
 
     def kernel(self, cfgs, slip, score, pessimistic=True):
-        return E.grid_kernel(cfgs, self.n, self.year_of_day, len(self.years), self.fold_ends, self.hash_w,
-                             *self.mk.day_args(), *self.mk.minute_args(), float(slip), pessimistic,
+        return E.grid_kernel(self.mk.day_fn, cfgs, self.n, self.year_of_day, len(self.years), self.fold_ends,
+                             self.hash_w, self.mk.day_args(), self.mk.minute_args(), float(slip), pessimistic,
                              self.u, self.u_wf, P.BLOCK, score)
 
     def daily(self, cfgs, slip=BASE_SLIP, pessimistic=True):
-        return E.daily_kernel(np.asarray(cfgs, np.int64), self.n, *self.mk.day_args(), *self.mk.minute_args(),
-                              float(slip), pessimistic)
+        return E.daily_kernel(self.mk.day_fn, np.asarray(cfgs, np.int64), self.n, self.mk.day_args(),
+                              self.mk.minute_args(), float(slip), pessimistic)
 
 
 def run_grid(dev: Dev, cfgs: np.ndarray, slip: float, score: bool):
@@ -322,7 +335,7 @@ def walk_forward(grid: Grid, dev: Dev, df: pd.DataFrame, arr: dict) -> pd.DataFr
             rows.append({"year": year, "champion": "none qualified", "qualified": 0, "pnl_usd_in_year": 0.0})
             continue
         best = order[0]
-        rows.append({"year": year, "champion": label(df.loc[best]), "qualified": len(order),
+        rows.append({"year": year, "champion": grid.family.label(df.loc[best]), "qualified": len(order),
                      "pnl_usd_in_year": float(ypnl[best, k])})
     return pd.DataFrame(rows)
 
@@ -401,6 +414,17 @@ def combine_scores(pnl, low, n_sims, block, seed=SEED):
     return E._bootstrap(pnl, low, len(pnl), u, block)
 
 
+def micro_stats(t, n_days, contracts) -> dict:
+    """DIAGNOSTIC ONLY (never used to select): the same trades at `contracts` micro contracts.
+    Synthetic: MCL started in 2021, so this scales CL prices; slippage stays in ticks."""
+    pnl = contracts * (t[3] * (t[5] - t[4]) * MCL_TICK_USD - MCL_FEE_USD)
+    mae = contracts * (t[6] * MCL_TICK_USD + MCL_FEE_USD)
+    day_pnl, day_low = P.daily_series(t[0], pnl, mae, n_days)
+    p, f, dd = combine_scores(day_pnl, day_low, N_SIMS, P.BLOCK)
+    return {"expectancy_usd": float(pnl.mean()) if len(pnl) else float("nan"), "pass_prob": p, "fail_prob": f,
+            "p95_drawdown": dd, "max_drawdown_usd": float(P.max_drawdown(day_pnl, day_low))}
+
+
 def to_minute_rows(mk: E.Market, t):
     """Engine trades (front rows) -> the (in, out, dir, px_in, px_out, mae, why) tuple search.py's
     stats helpers expect (rows of Minutes)."""
@@ -427,16 +451,16 @@ def write_trades(t, mk, m, cal, path):
     }).to_csv(path, index=False)
 
 
-def label(row) -> str:
+def orb_label(row) -> str:
     return (f"{row['anchor']} / {row['range_min']}m range / {row['trigger']} / buf {row['buffer']} / "
             f"stop {row['stop']} / tgt {row['target']} / window {row['window_min']}m / flat {row['flat']} / "
             f"{row['direction']} / width {row['width']} / BE {row['breakeven']}")
 
 
-def source_hash() -> str:
+def source_hash(family=None) -> str:
     """Code AND the reference data the results depend on (EIA calendar, contract expiries)."""
     h = hashlib.sha256()
-    for f in SOURCE_FILES:
+    for f in SOURCE_FILES + (family or ORB).extra_sources:
         h.update(f.encode() + b"\0" + (Path(__file__).parent / f).resolve().read_bytes())
     for f in [EIA_FILE, DEFINITIONS_FILE]:
         h.update(f.name.encode() + b"\0" + f.read_bytes())
@@ -445,16 +469,14 @@ def source_hash() -> str:
 
 # --- main -------------------------------------------------------------------------------------------
 
-def main() -> int:
-    global OUT_DIR
-    quick = "--quick" in sys.argv
-    dims = DIMS
-    if quick:
-        OUT_DIR = OUT_DIR.parent / "orb_quick"
-        dims = {**DIMS, "anchor": ["et0900"], "range_min": [5, 15, 30], "trigger": ["stop", "close5"],
-                "width": ["none", "mid_only"]}
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    if (OUT_DIR / "holdout_opened.json").exists():
+def main(family=None, argv=None) -> int:
+    family = family or ORB
+    argv = sys.argv if argv is None else argv
+    quick = "--quick" in argv
+    dims = {**family.dims, **family.quick_dims} if quick else family.dims
+    out_dir = family.out_dir.parent / f"{family.name}_quick" if quick else family.out_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if (out_dir / "holdout_opened.json").exists():
         print("The holdout was already opened for these picks. Re-running the search now would let")
         print("holdout knowledge leak into new picks. Start a new research folder instead.")
         return 2
@@ -464,8 +486,8 @@ def main() -> int:
     cal = S.Calendar(m)
     if cal.n_dev != len(cal.days):
         raise RuntimeError("holdout data must not be loaded here")
-    dev = Dev(m, cal)
-    grid = Grid(dims)
+    dev = Dev(m, cal, family)
+    grid = Grid(dims, family)
     cfgs = grid.cfg[grid.canonical]
     print(f"  {len(m):,} minutes, {cal.n_dev:,} trading days. Grid: {grid.n:,} dense, {len(cfgs):,} unique", flush=True)
 
@@ -475,11 +497,11 @@ def main() -> int:
     slip2 = run_grid(dev, cfgs, GATE_SLIP, False)
     df, arr = metrics_frame(grid, dev, base, slip2)
     df = rank(grid, df)
-    df[df["canonical"]].sort_values("rank").to_csv(OUT_DIR / "results.csv.gz", index=False)
+    df[df["canonical"]].sort_values("rank").to_csv(out_dir / "results.csv.gz", index=False)
 
     print("Walk-forward test of the selection method...", flush=True)
     wf = walk_forward(grid, dev, df, arr)
-    wf.to_csv(OUT_DIR / "walk_forward.csv", index=False)
+    wf.to_csv(out_dir / "walk_forward.csv", index=False)
 
     rng = np.random.default_rng(SEED)
     print("Overfitting diagnostics...", flush=True)
@@ -511,14 +533,15 @@ def main() -> int:
             st["stress"] = {s: period_stats(dev.mk, m, cal, c, "dev", slip=s) for s in STRESS_SLIPS}
             st["optimistic"] = period_stats(dev.mk, m, cal, c, "dev", pessimistic=False)
             t = dev.mk.trades(c, n_days=cal.n_dev)
-            write_trades(t, dev.mk, m, cal, OUT_DIR / "champion_trades_dev.csv")
+            write_trades(t, dev.mk, m, cal, out_dir / "champion_trades_dev.csv")
+            st["micro"] = {k: micro_stats(t, cal.n_dev, k) for k in MICRO_SIZES}
             st["exit_mix"] = pd.Series([E.EXIT_NAMES[int(w)] for w in t[7]]).value_counts(normalize=True).round(3).to_dict()
         detail.append((i, st))
 
     champ_ok = bool(df.loc[champ, "eligible"])
     frozen = {
         "created_utc": pd.Timestamp.now(tz="UTC").isoformat(),
-        "source_sha256": source_hash(),
+        "source_sha256": source_hash(family),
         "quick": quick,
         "any_config_eligible": bool(df["eligible"].any()),
         "champion_eligible": champ_ok,
@@ -526,21 +549,25 @@ def main() -> int:
         "deflated_sharpe_unique": dsr_unique,
         "deflated_sharpe_effective": dsr_eff,
         "pbo": pbo,
-        "champion": {k: (v.item() if hasattr(v, "item") else v) for k, v in df.loc[champ, KEYS].items()},
+        "pbo_streams": int(len(sample)),
+        "family": family.name,
+        "champion": {k: (v.item() if hasattr(v, "item") else v) for k, v in df.loc[champ, grid.keys].items()},
         "champion_cfg": grid.cfg[champ].tolist(),
-        "finalists_diagnostic_only": [label(df.loc[i]) for i, _ in detail[1:]],
+        "finalists_diagnostic_only": [family.label(df.loc[i]) for i, _ in detail[1:]],
     }
-    (OUT_DIR / "frozen_picks.json").write_text(json.dumps(frozen, indent=2))
-    write_report(df, wf, detail, frozen, n_unique, n_eff, cal, grid)
-    print(f"\nDevelopment report: {OUT_DIR / 'report.md'}")
-    print("Champion frozen. Next (runs ONCE): python -m propfirm_backtest.orb_holdout")
+    (out_dir / "frozen_picks.json").write_text(json.dumps(frozen, indent=2))
+    write_report(df, wf, detail, frozen, n_unique, n_eff, cal, grid, out_dir)
+    print(f"\nDevelopment report: {out_dir / 'report.md'}")
+    print(f"Champion frozen. Next (runs ONCE): {family.holdout_cmd}")
     return 0
 
 
-def write_report(df, wf, detail, frozen, n_unique, n_eff, cal, grid):
+def write_report(df, wf, detail, frozen, n_unique, n_eff, cal, grid, out_dir):
     fmt = S.fmt
+    family = grid.family
+    label = family.label
     can = df[df["canonical"]]
-    L = ["# ORB: development results (2010-06 -> 2021-12)", "",
+    L = [f"# {family.title}: development results (2010-06 -> 2021-12)", "", *family.notes,
          f"Generated {pd.Timestamp.now(tz='UTC'):%Y-%m-%d %H:%M} UTC. {len(can):,} unique configurations "
          f"({grid.n:,} in the dense grid), {cal.n_dev:,} trading days.",
          "Costs: $4.02 round turn + 1 tick slippage per side; same-minute ambiguity resolved against us; "
@@ -559,12 +586,12 @@ def write_report(df, wf, detail, frozen, n_unique, n_eff, cal, grid):
           f"- Deflated Sharpe of the champion: {fmt(frozen['deflated_sharpe_unique'], pct=True)} at {n_unique:,} unique trials (conservative), "
           f"{fmt(frozen['deflated_sharpe_effective'], pct=True)} at {n_eff:,.0f} effective trials (optimistic). "
           f"The verdict needs the optimistic one >= 95%.",
-          f"- Probability of backtest overfitting (CSCV, {N_PBO:,} random unique streams): {fmt(frozen['pbo'], pct=True)} "
+          f"- Probability of backtest overfitting (CSCV, {frozen['pbo_streams']:,} random unique streams): {fmt(frozen['pbo'], pct=True)} "
           f"(the verdict needs < 50%). PBO only says whether rankings persist; it does not show an edge "
           f"(costs alone make bad configs persistently bad).", ""]
     if not frozen["any_config_eligible"]:
         L += ["**No configuration passed all gates.** The rankings below are for learning only; "
-              "ORB should not be traded as specified.", ""]
+              f"{family.title} should not be traded as specified.", ""]
 
     L += ["## Champion (frozen for the holdout) + finalists (diagnostics only, never promoted)", "",
           "| # | Settings | Trades | Expectancy | PF | Pass % | Fail % | p95 DD | +1 tick exp. | Pass % blocks 5/10/20 (20k sims) |",
@@ -586,6 +613,14 @@ def write_report(df, wf, detail, frozen, n_unique, n_eff, cal, grid):
     o = st["optimistic"]
     L.append(f"| Optimistic same-minute fills | {fmt(o['expectancy_usd'], money=True)} | {fmt(o['profit_factor'])} | {fmt(o['pass_prob'], pct=True)} |")
     L += ["", "Exit mix: " + ", ".join(f"{k} {100 * v:.1f}%" for k, v in st["exit_mix"].items())]
+    L += ["", "### Diagnostic only: the champion at micro size (never used to select)", "",
+          f"Synthetic micro crude (MCL): CL prices scaled to ${MCL_TICK_USD:.0f}/tick, ${MCL_FEE_USD} round turn per contract "
+          "(verify), slippage in ticks unchanged. MCL only exists since 2021, so this is a sizing study, not an MCL backtest.", "",
+          "| Size | Expectancy | Pass % | Fail % | p95 DD (60 days) | Max DD |", "|---|---|---|---|---|---|",
+          f"| 1 CL (selection size) | {fmt(st['expectancy_usd'], money=True)} | {fmt(st['pass_prob'], pct=True)} | "
+          f"{fmt(st['fail_prob'], pct=True)} | {fmt(st['p95_drawdown'], money=True)} | {fmt(st['max_drawdown_usd'], money=True)} |"]
+    L += [f"| {k} MCL | {fmt(v['expectancy_usd'], money=True)} | {fmt(v['pass_prob'], pct=True)} | {fmt(v['fail_prob'], pct=True)} | "
+          f"{fmt(v['p95_drawdown'], money=True)} | {fmt(v['max_drawdown_usd'], money=True)} |" for k, v in st["micro"].items()]
     L += ["", "### P&L by year", "", "| Year | P&L |", "|---|---|"] + [f"| {y} | {fmt(v, money=True)} |" for y, v in st["by_year"].items()]
 
     L += ["", "## Walk-forward test of the selector", "",
@@ -594,11 +629,11 @@ def write_report(df, wf, detail, frozen, n_unique, n_eff, cal, grid):
     L += [f"| {r['year']} | {r['qualified']:,} | {r['champion']} | {fmt(r['pnl_usd_in_year'], money=True)} |" for _, r in wf.iterrows()]
     L.append(f"| **Total** | | | **{fmt(wf_total, money=True)}** |")
 
-    cols = KEYS + ["trades", "expectancy_usd", "expectancy_slip2", "profit_factor", "pass_prob", "plateau_score", "eligible"]
-    for by in ["anchor", "range_min", "trigger"]:
+    cols = grid.keys + ["trades", "expectancy_usd", "expectancy_slip2", "profit_factor", "pass_prob", "plateau_score", "eligible"]
+    for by in family.best_per:
         best = can.sort_values("rank").groupby(by, sort=False).head(1).sort_values(by)
         L += ["", f"## Best configuration per {by}", "", "```", best[cols].round(3).to_string(index=False), "```"]
-    for by in KEYS:
+    for by in grid.keys:
         g = can.groupby(by).agg(median_expectancy=("expectancy_usd", "median"),
                                 share_profitable=("total_usd", lambda s: (s > 0).mean()),
                                 best_expectancy=("expectancy_usd", "max"), best_pass_prob=("pass_prob", "max"),
@@ -606,7 +641,37 @@ def write_report(df, wf, detail, frozen, n_unique, n_eff, cal, grid):
         L += ["", f"## Effect of {by} (all configs)", "", "```", g.round(3).to_string(), "```"]
     L += ["", "Files: `results.csv.gz` (every config), `walk_forward.csv`, `frozen_picks.json`, "
           "`champion_trades_dev.csv` (every champion trade, for independent recomputation)."]
-    (OUT_DIR / "report.md").write_text("\n".join(L))
+    (out_dir / "report.md").write_text("\n".join(L))
+
+
+@dataclass
+class Family:
+    """One strategy family: its grid, how grid levels become engine configs, and its report text."""
+    name: str
+    title: str
+    dims: dict
+    neighbours: dict  # ordinal dimensions only: dim -> "linear" or {level: [neighbour levels]}
+    cfg_matrix: Callable
+    market: Callable  # (m, days, eia, strict_expiry) -> Market
+    label: Callable
+    best_per: list
+    quick_dims: dict = field(default_factory=dict)
+    twins: Callable | None = None
+    notes: list = field(default_factory=list)
+    extra_sources: list = field(default_factory=list)
+    holdout_cmd: str = ""
+
+    @property
+    def out_dir(self) -> Path:
+        return DATA_DIR / "backtests" / self.name
+
+
+ORB = Family(
+    name="orb", title="ORB", dims=DIMS, neighbours=NEIGHBOURS, cfg_matrix=orb_cfg_matrix, market=E.Market,
+    label=orb_label, best_per=["anchor", "range_min", "trigger"], twins=orb_twins,
+    quick_dims={"anchor": ["et0900"], "range_min": [5, 15, 30], "trigger": ["stop", "close5"],
+                "width": ["none", "mid_only"]},
+    holdout_cmd="python -m propfirm_backtest.orb_holdout")
 
 
 if __name__ == "__main__":

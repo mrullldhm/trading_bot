@@ -25,7 +25,6 @@ from propfirm_data.config import BARS_DIR, DEFINITIONS_FILE
 from propfirm_data.eia_calendar import load_releases
 
 from . import bars as B
-from . import orb_engine as E
 from . import orb_search as O
 from . import search as S
 
@@ -34,11 +33,13 @@ MIN_DSR = 0.95
 MAX_PBO = 0.5
 
 
-def preflight(out: Path) -> tuple[dict | None, int]:
+def preflight(out: Path, family=None) -> tuple[dict | None, int]:
     """(frozen picks, 0) when the holdout may be opened, else (None, exit code)."""
     picks_file, marker = out / "frozen_picks.json", out / "holdout_opened.json"
     if not picks_file.exists():
-        print("No frozen champion. Run: python -m propfirm_backtest.orb_search")
+        name = (family or O.ORB).name
+        cmd = "orb_search" if name == "orb" else f"family_search {name}"
+        print(f"No frozen champion. Run: python -m propfirm_backtest.{cmd}")
         return None, 1
     frozen = json.loads(picks_file.read_text())
     if frozen.get("quick"):
@@ -48,7 +49,7 @@ def preflight(out: Path) -> tuple[dict | None, int]:
         print(f"Holdout already opened on {json.loads(marker.read_text())['opened_utc']}.")
         print(f"Results: {out / 'holdout.md'}. A second look would not be an unbiased test.")
         return None, 2
-    if frozen["source_sha256"] != O.source_hash():
+    if frozen["source_sha256"] != O.source_hash(family):
         print("Strategy code or reference data changed after the champion was frozen. Re-run the search first.")
         return None, 3
     missing = [str(p) for p in [BARS_DIR, DEFINITIONS_FILE] if not p.exists()]
@@ -68,10 +69,12 @@ def verdict(frozen: dict, ho: dict) -> tuple[str, bool, bool]:
     return ("PASS" if ok_dev and ok_ho else "FAIL"), ok_dev, ok_ho
 
 
-def evaluate(m, frozen: dict, out: Path, eia) -> str:
+def evaluate(m, frozen: dict, out: Path, eia, family=None, verdict_fn=None, rule_text=None) -> str:
     """Run the champion on all data, save raw results first, then the report. Returns the verdict."""
+    family = family or O.ORB
+    verdict_fn = verdict_fn or (lambda fr, ho, t, cal: verdict(fr, ho))
     cal = S.Calendar(m)
-    mk = E.Market(m, cal.days, eia, strict_expiry=True)
+    mk = family.market(m, cal.days, eia, strict_expiry=True)
     print(f"  holdout: {len(cal.days) - cal.n_dev:,} trading days", flush=True)
     cfg = np.array(frozen["champion_cfg"], dtype=np.int64)
     t = mk.trades(cfg)
@@ -79,9 +82,9 @@ def evaluate(m, frozen: dict, out: Path, eia) -> str:
     ho = S.period_stats(O.to_minute_rows(mk, t), m, cal, "holdout")
     ho["stress"] = {s: S.period_stats(O.to_minute_rows(mk, mk.trades(cfg, slip=s)), m, cal, "holdout")
                     for s in HOLDOUT_SLIPS}
-    result, _, _ = verdict(frozen, ho)
+    result, _, _ = verdict_fn(frozen, ho, t, cal)
     (out / "holdout_raw.json").write_text(json.dumps({"verdict": result, "stats": ho}, indent=2, default=float))
-    write_report(frozen, ho, result, out)
+    write_report(frozen, ho, result, out, family, rule_text)
     return result
 
 
@@ -105,21 +108,22 @@ def main() -> int:
     return 0
 
 
-def write_report(frozen: dict, ho: dict, result: str, out: Path):
+def write_report(frozen: dict, ho: dict, result: str, out: Path, family=None, rule_text=None):
     fmt = S.fmt
-    L = ["# ORB: holdout results (2022 -> today), opened once", "",
+    family = family or O.ORB
+    L = [f"# {family.title}: holdout results (2022 -> today), opened once", "",
          f"Opened {pd.Timestamp.now(tz='UTC'):%Y-%m-%d %H:%M} UTC. Champion frozen {frozen['created_utc'][:16]} UTC.", "",
          "Caveat: 2022+ was already viewed for Strategy 1, so this is an ORB confirmation set, not pristine data.", "",
          f"## Verdict: **{result}**", "",
-         f"PASS needs ALL of: the champion passed every development gate and the plateau rule; the walk-forward "
-         f"selector made money; PBO < {MAX_PBO:.0%}; deflated Sharpe >= {MIN_DSR:.0%} at the (optimistic) effective "
-         f"trial count; in the holdout the champion is profitable, also with +1 tick slippage, and passes the "
-         f"Combine more often than it fails.", "",
+         rule_text or (f"PASS needs ALL of: the champion passed every development gate and the plateau rule; the walk-forward "
+                       f"selector made money; PBO < {MAX_PBO:.0%}; deflated Sharpe >= {MIN_DSR:.0%} at the (optimistic) effective "
+                       f"trial count; in the holdout the champion is profitable, also with +1 tick slippage, and passes the "
+                       f"Combine more often than it fails."), "",
          f"- Champion eligible in development: {'yes' if frozen['champion_eligible'] else '**no**'}",
          f"- Walk-forward selector P&L (2014-2021): {fmt(frozen['walk_forward_total_usd'], money=True)}",
          f"- PBO: {fmt(frozen['pbo'], pct=True)}; deflated Sharpe: {fmt(frozen['deflated_sharpe_unique'], pct=True)} "
          f"(unique trials), {fmt(frozen['deflated_sharpe_effective'], pct=True)} (effective trials)", "",
-         f"## Champion: {O.label(frozen['champion'])}", ""] + S.benchmark_table(ho)
+         f"## Champion: {family.label(frozen['champion'])}", ""] + S.benchmark_table(ho)
     L += ["", "### Slippage stress (holdout)", "", "| Slippage / side | Expectancy | PF | Pass % |", "|---|---|---|---|",
           f"| 1 tick (base) | {fmt(ho['expectancy_usd'], money=True)} | {fmt(ho['profit_factor'])} | {fmt(ho['pass_prob'], pct=True)} |"]
     for s, st in ho["stress"].items():

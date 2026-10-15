@@ -42,7 +42,8 @@ def day_setup(f: E.Front, rows: dict, daytime: dict, trading_day: int, anchor: s
             rel = _utc_min((day_date + pd.Timedelta(minutes=int(r["minute_et"]))).tz_localize(E.ET))
             blocks.append((rel - E.EIA_BLOCK, rel + E.EIA_BLOCK))
     return {"first": after, "rend": start + L, "hi": max(f.high[i] for i in idx),
-            "lo": min(f.low[i] for i in idx), "sess_end": sess_end, "blocks": blocks}
+            "lo": min(f.low[i] for i in idx), "sess_end": sess_end, "blocks": blocks,
+            "ropen": f.open[idx[0]], "rclose": f.close[idx[-1]], "rvol": float(sum(f.volume[i] for i in idx))}
 
 
 def simulate_day(f, s, trigger, buf, stop_type, stop_ticks, target_r, window, flat_off, dirpol, be,
