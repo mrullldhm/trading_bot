@@ -4,7 +4,7 @@ The foundation for a planned automated trading bot for a **Topstep** prop-firm a
 
 Right now it **downloads, converts, validates, and cross-checks** CL historical data, and **backtests** strategies on it with Topstep's rules, a once-only holdout per strategy, and an audit of the backtester itself. Live-trading code comes next.
 
-> **Status:** Data pipeline and backtester done. Strategies 1-7 (EMA x VWAP, ORB, ZAB, Crabel, Fisher ACD, a third-party VWAP Break bot, Momentum Pullback) tested: **all failed**. A full [backtest audit](#backtest-audit-are-the-fails-real-2026-10-16) confirmed the failures are real, not bugs or bad data. See [Strategy results](#strategy-results). No live-trading code yet.
+> **Status:** Data pipeline and backtester done. Strategies 1-8 (EMA x VWAP, ORB, ZAB, Crabel, Fisher ACD, a third-party VWAP Break bot, Momentum Pullback, a TradingView Pine momentum script) tested: **all failed**. A full [backtest audit](#backtest-audit-are-the-fails-real-2026-10-16) confirmed the failures are real, not bugs or bad data. See [Strategy results](#strategy-results). No live-trading code yet.
 >
 > **Not financial advice.** Most trading strategies lose money. This project is a learning build with heavy safety checks, not a promise of profit.
 
@@ -51,7 +51,7 @@ The roadmap comes from [TRADING_BOT_GUIDE.md, Section 8](TRADING_BOT_GUIDE.md#8-
 | Phase | What | Status |
 |---|---|---|
 | 0 | Learn and set up | ✅ Done |
-| 1 | Write the strategy in plain words | 🔁 Strategies 1-7 written and tested. **All failed.** Main blocker: drawdown on 1 CL (see [lessons](#lessons-across-strategies-1-5)) |
+| 1 | Write the strategy in plain words | 🔁 Strategies 1-8 written and tested. **All failed.** Main blocker: drawdown on 1 CL (see [lessons](#lessons-across-strategies-1-5)) |
 | 2 | Get data and handle rollover | ✅ Done: downloaded, validated, cross-checked against Massive (Databento confirmed correct, see [results](#data-quality-results)) |
 | 3 | Backtest with real costs | ✅ Backtester built (`propfirm_backtest/`), verified independently by Codex |
 | 4 | Robustness testing (out-of-sample, walk-forward, Monte Carlo) | ✅ Built in: holdout, walk-forward, bootstrap Combine simulation, slippage stress |
@@ -148,7 +148,11 @@ propfirm/
 │   ├── momentum_engine.py    ← strategy 7: Momentum Pullback simulator + grid kernels (numba)
 │   ├── momentum_reference.py ← slow plain-Python strategy 7, cross-checks the engine
 │   ├── momentum_search.py    ← strategy 7, step 1 (grid + selection via orb_search)
-│   └── momentum_holdout.py   ← strategy 7, step 2 (once-only holdout; refuses if the champion failed the gates)
+│   ├── momentum_holdout.py   ← strategy 7, step 2 (once-only holdout; refuses if the champion failed the gates)
+│   ├── momentum2_engine.py   ← strategy 8: Pine momentum script simulator + grid kernels (numba)
+│   ├── momentum2_reference.py← slow plain-Python strategy 8, cross-checks the engine
+│   ├── momentum2_search.py   ← strategy 8, step 1 (grid + selection via orb_search, Pine-settings table)
+│   └── momentum2_holdout.py  ← strategy 8, step 2 (once-only holdout; refuses if the champion failed the gates)
 ├── tests/                    ← automatic tests (no internet needed), one file per module:
 │                               test_<module>.py; the audit adds test_audit_engine.py (look-ahead,
 │                               mirror, zero-sum, planted edge), test_audit_report.py, test_acd_signal_holdout.py
@@ -164,6 +168,7 @@ propfirm/
         ├── orb_families_program.md ← strategies 3-5 judged as one programme
         ├── vwap_break/       ← strategy 6
         ├── momentum/         ← strategy 7
+        ├── momentum2/        ← strategy 8
         └── audit/            ← audit report, trade charts, scenario and control re-runs
 ```
 
@@ -247,6 +252,8 @@ Lesson for backtesting: different data vendors can disagree on 1-minute closes, 
 | `python -m propfirm_backtest.vwap_break_eval [--skip-neighbours]` | Strategy 6: third-party VWAP Break bot, published parameters (replicate + out of sample + neighbours) → `data/backtests/vwap_break/report.md` | No |
 | `python -m propfirm_backtest.momentum_search [--quick]` | Strategy 7: Momentum Pullback grid, 233,280 configs (~3 h) | No |
 | `python -m propfirm_backtest.momentum_holdout` | Strategy 7 holdout. **Runs once only**; refuses if the champion failed the gates (`--open-ineligible` overrides) | No |
+| `python -m propfirm_backtest.momentum2_search [--quick]` | Strategy 8: Pine momentum script grid, 81,000 configs (~45 min) | No |
+| `python -m propfirm_backtest.momentum2_holdout` | Strategy 8 holdout. **Runs once only**; same refusal rule as strategy 7 | No |
 | `python -m propfirm_backtest.audit scenarios [--quick]` / `control` / `report` | Backtest audit: re-runs every search under other assumptions (~4 h; `--quick` = small grids), the planted-edge control (~20 min), then the report | No |
 | `python -m propfirm_backtest.acd_signal_holdout --register` / `--run` | Freeze the ACD signal test (never reads 2022+), then run it **once only** | No |
 | `python -m pytest -q` | Runs all automatic tests | No |
@@ -433,6 +440,26 @@ Full report (local): `data/backtests/audit/report.md`, trade charts `data/backte
 
 **Lesson:** unlike strategies 1-5, costs are not the main killer: the entry itself loses before costs on CL, at every timeframe, so no exit or filter in this grid could rescue it. The trader's charts are gold and EURUSD; this says nothing about those markets. Holdout not opened (champion failed the gates, so the one look would only confirm a known FAIL). Report (local): `data/backtests/momentum/report.md`.
 
+### Strategy 8: Pine "1-Minute Momentum Strategy": ❌ FAILED (2026-10-16)
+
+**Rules** (a TradingView Pine v6 script, ported as written): bar t-3 body > 1.5x bar t-4 body (any colour), then 2 bars with higher closes and higher-or-equal lows, then a small-body bar t (body < `body_thresh`% of its range) that closes up and above the previous bar's open. **Market** entry at the next bar's open; stop at bar t's low, target `close + 2 x (close - low)`, both fixed from bar t (not rebased to the fill). TradingView order handling kept: pyramiding 1, a same-direction signal moves the bracket, an opposite one reverses. 1 CL, same costs and fills as strategies 1-7. Codex reviewed the spec against TradingView's broker emulator before coding (next-available-bar fills, bracket timing, reversal order), reviewed the engine (one MAE bug in the TradingView-fill mode, fixed), and recomputed 10 champion trades from raw bars: 10/10 match.
+
+**Bug in the script:** `bodyPercent` is 0-100, so the default `body_thresh = 0.3` means body < **0.3%** of the range, an almost perfect doji that must still close up. On CL that fired **0 times** in 10.2M 1-minute bars (and 0 on 5-minute). 10/20/30/40% were tested as the likely intent.
+
+**Tested:** 81,000 configs = 5 timeframes (1/2/3/5/15 min) x momentum 1.5/2/3x x body 0.3/10/20/30/40% x R 1-4 x momentum colour (any / with trend) x order handling (TradingView / ignore signals in a trade) x stop buffer x min risk 0/5/10 ticks x session x direction.
+
+| Finding | Result |
+|---|---|
+| Settings passing every gate | **0 of 81,000** (walk-forward: no year ever had a qualifying setting) |
+| Profitable after costs (2010-2021) | 895 (1.1%); only 11 with >= 300 trades, none passes the gates |
+| Champion | 15 min / 3x / body < 40% / 4R / short only: **-$6/trade**, PF 0.96, Combine pass 12% vs fail 60% |
+| Median config | **-$32 to -$39/trade** on every timeframe and body size |
+| The script's settings, body < 30% (1 min) | 18,201 trades (6/day), **-$32/trade**, PF 0.39 |
+| Same, zero slippage | -$14/trade (-$10 before fees) |
+| Same, TradingView-style fills (bar path, touch fills, zero slippage) | **-$10/trade** (-$6 before fees), win rate 31% vs 33% break-even at 2R |
+
+**Lesson:** same as strategy 7: the pattern itself loses on CL before costs, even with TradingView's friendlier fills, so the script (with the threshold fixed to 30%) would show a loss on a CL chart in TradingView too. A default input that can never fire is a sign the script was not backtested as published. Holdout not opened (champion failed the gates). Report (local): `data/backtests/momentum2/report.md`.
+
 ---
 
 ## Troubleshooting
@@ -460,6 +487,7 @@ Full report (local): `data/backtests/audit/report.md`, trade charts `data/backte
 | `data/backtests/orb_families_program.md` | Strategies 3-5 judged as one programme (union DSR/PBO, Holm). Local only, created by `family_program` |
 | `data/backtests/vwap_break/report.md` | Strategy 6: replicate, out of sample, neighbours. Local only, created by `vwap_break_eval` |
 | `data/backtests/momentum/report.md` | Strategy 7: grid, gates, walk-forward, faithful (R >= 2) table. Local only, created by `momentum_search` |
+| `data/backtests/momentum2/report.md` | Strategy 8: grid, gates, walk-forward, the script's own settings under project and TradingView-style fills. Local only, created by `momentum2_search` |
 | `data/backtests/audit/report.md` | Backtest audit: checks, scenarios, positive control, idea vs execution. Local only, created by `audit report` |
 | `data/backtests/acd/signal_holdout.md` | The pre-registered ACD entry-signal holdout result (spent). Local only |
 
