@@ -64,6 +64,13 @@ Paths starting `data/backtests/` are local reports (not in git); `prior-work/STR
 | K4.1 | Anchors that helped breakout-type rules: 09:00 ET (NYMEX open) and London 08:00 beat 08:30 ET; the 18:00 ET Globex open was worst in every view (ORB 0.0% profitable, median −$39) | EXPLORATORY | ORB/ZAB/Crabel/ACD reports |
 | K4.2 | EMA x VWAP: New York held the best single config but the worst median (−$35.9); at zero cost Asian and London beat New York | EXPLORATORY | ema_vwap report |
 | K4.3 | Momentum Pullback: only the New York session produced any profitable configs | EXPLORATORY | momentum report |
+| K4.4 | **Settlement continuation**: the 14:25-14:35 move predicts 14:35-16:05 in the same direction (corr 0.16, sign IC 0.12, gross 2.6 ticks/trade, q 5e-5) but it **decays**: 4.4 / 2.6 / 0.4 ticks in 2010-12 / 2013-14 / 2015-16. Below cost (2.4) on average | CONFIRMED (discovery, R009) | S002 report |
+| K4.5 | **Post-settlement drift**: 14:30-15:00 averages -2.2 ticks (t -5.9), negative in every year 2010-16 and every block; below cost alone | CONFIRMED (discovery, R009) | S002 report |
+| K4.6 | EIA 10:30: the 10:30-10:34 move is x2.7 the same minutes on other weekdays (volume x4.6) and x3.1 its own 10:00-10:14; the first 5 minutes predict nothing to 11:30 | CONFIRMED (discovery, R009) | S002 report |
+| K4.7 | CL0 and CL1 move together (corr 0.99 over 30 minutes at 09:00 / 14:00); the CL0-CL1 spread change (sd 3-5 ticks) predicts nothing for the next 25-55 minutes | CONFIRMED (discovery; counts by R009) | S002 lead-lag table |
+| K4.8 | 1-60 minute returns mean-revert (VR 0.89-0.94 NY, 0.87-0.92 London, 0.78-0.86 Asia) in every block: mostly bid-ask bounce of last-trade prices, not a tradeable edge. Variance ratios must use a filled minute grid; unbroken traded stretches select fast markets in thin hours | CONFIRMED (R009 VR(30) 0.904 vs 0.905) | S002, R008 |
+| K4.9 | Liquidity: Asia 18:30-02:00 has 15-27 lots/min and 25-40% thin minutes (< 5 lots), 83-93% minute coverage; 18:05 entries are thin 20% of the time; 09:00-11:00 and 14:00-14:30 carry 670-1,080 lots/min | CONFIRMED (descriptive) | S002 half-hour table |
+| K4.10 | Contango dominated 2010-16 (1,315 vs 299 synchronised days); no term-structure regime changes the naive overnight -> NY or first-hour -> rest rules beyond noise (best q 0.19) | CONFIRMED (counts R009) | S002 regimes |
 
 ## K5. Direction, holding period, stops, filters
 

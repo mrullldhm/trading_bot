@@ -28,3 +28,48 @@ S001-011,2026-10-16T15:57:12Z,S001,access,discovery,0,,,,,,,,,intent CL.v.0 warm
 S001-012,2026-10-16T15:57:27Z,S001,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S001 Part B (full): planted-edge feasibility
 S001-013,2026-10-16T16:06:46Z,S001,descriptive,discovery,8640,Part B planted-edge Combine odds,,,DESCRIPTIVE,,0bc18865c4e47bd2a15041355af4835ede48e91be2e90d7172bad7c01b9f7f39,a6d73cc56eb292661c6a55a46a9fa4eb1b70eb00a791885ee806c031e2ab6a49,data/research/s001/20261016T155651Z_full/partB_cells.parquet,"full: 9 templates x 20 seeds (10 antithetic pairs) x 3 freqs x 2 costs x 8 sizes x 2 reserves x 10 edges, 1000 attempts, DLL on"
 S001-014,2026-10-16T16:15:55Z,S001,synthetic,none,504,Part A parametric Combine odds,,,DESCRIPTIVE,,3e265c370f5956364c6fceca205e02d3f65454c32cd8a99a801dd1d6bc041ae4,,data/research/s001/20261016T161531Z_full/partA.parquet,"full: normal/t5/t3 (scale mixture) x 7 SR x 4 sd x 3 accounts x 2 reserves, 5000 days, DLL on"
+S002-001,2026-10-16T20:43:06Z,S002,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S002 atlas (quick): front month
+S002-002,2026-10-16T20:43:15Z,S002,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S002 atlas (quick): front month
+S002-003,2026-10-16T20:43:15Z,S002,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S002 atlas (quick): second month for the term structure
+S002-004,2026-10-16T20:43:21Z,S002,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S002 atlas (quick): second month for the term structure
+S002-005,2026-10-16T20:43:32Z,S002,descriptive,discovery,247,S002 market atlas (BH over all tests),5,,DESCRIPTIVE,,bac9abb15892f6e3c68b177cec7ac20191a819cb75c5547b8d9a98d4bb6efacb,8f32ba3fe1826d317b93b9f4759359134623a33a2066672d9d610d391378ca82,data/research/s002/20261016T204332Z_quick,"quick: 516 days, 91 EIA rule days; value = tests with q < 0.05"
+S002-006,2026-10-16T20:47:04Z,S002,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S002 atlas (quick): front month
+S002-007,2026-10-16T20:47:11Z,S002,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S002 atlas (quick): front month
+S002-008,2026-10-16T20:47:11Z,S002,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S002 atlas (quick): second month for the term structure
+S002-009,2026-10-16T20:47:17Z,S002,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S002 atlas (quick): second month for the term structure
+S002-010,2026-10-16T20:47:33Z,S002,descriptive,discovery,313,S002 market atlas (BH over all tests),4,,DESCRIPTIVE,,99bdd4058de06b5bb646e40005e41aad3fc77c045266f457de92b23d7782e65c,8f32ba3fe1826d317b93b9f4759359134623a33a2066672d9d610d391378ca82,data/research/s002/20261016T204733Z_quick,"quick: 516 days, 91 EIA rule days; value = tests with q < 0.05"
+S002-011,2026-10-16T20:52:01Z,S002,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S002 atlas (quick): front month
+S002-012,2026-10-16T20:52:09Z,S002,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S002 atlas (quick): front month
+S002-013,2026-10-16T20:52:09Z,S002,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S002 atlas (quick): second month for the term structure
+S002-014,2026-10-16T20:52:15Z,S002,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S002 atlas (quick): second month for the term structure
+S002-015,2026-10-16T20:52:34Z,S002,descriptive,discovery,318,S002 market atlas (BH over all tests),23,,DESCRIPTIVE,,554a1807d9d4fc5ef3e2fc00b8359ad246769932cee3c8a24a393eef122d8a10,d6c36d1c8034ed5ae434a99d91f51f263e5fe17ffff88aee7259c30175e90a54,data/research/s002/20261016T205233Z_quick,"quick: 516 days, 91 EIA rule days; value = tests with q < 0.1"
+S002-016,2026-10-16T20:52:49Z,S002,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S002 atlas (full): front month
+S002-017,2026-10-16T20:52:57Z,S002,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S002 atlas (full): front month
+S002-018,2026-10-16T20:52:57Z,S002,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
+S002-019,2026-10-16T20:53:03Z,S002,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
+S002-020,2026-10-16T20:54:12Z,S002,descriptive,discovery,323,S002 market atlas (BH over all tests),35,,DESCRIPTIVE,,554a1807d9d4fc5ef3e2fc00b8359ad246769932cee3c8a24a393eef122d8a10,f5c85d1ed16776c2574cd39d06644096de4a655f65c92b137612646a76972148,data/research/s002/20261016T205411Z_full,"full: 1685 days, 295 EIA rule days; value = tests with q < 0.1"
+S002-021,2026-10-16T20:55:52Z,S002,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S002 atlas (quick): front month
+S002-022,2026-10-16T20:56:00Z,S002,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S002 atlas (quick): front month
+S002-023,2026-10-16T20:56:00Z,S002,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S002 atlas (quick): second month for the term structure
+S002-024,2026-10-16T20:56:06Z,S002,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S002 atlas (quick): second month for the term structure
+S002-025,2026-10-16T20:56:27Z,S002,descriptive,discovery,318,S002 market atlas (BH over all tests),23,,DESCRIPTIVE,,da8062281fb009948f0874aaa1348b31847cc624f1d899b1db25570b61701782,a01673fceb33f7711a6162d631c941581ab27c3b562a37aaa939a8ef91cf8e5f,data/research/s002/20261016T205627Z_quick,"quick: 516 days, 91 EIA rule days; value = tests with q < 0.1"
+S002-026,2026-10-16T20:56:35Z,S002,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S002 atlas (full): front month
+S002-027,2026-10-16T20:56:42Z,S002,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S002 atlas (full): front month
+S002-028,2026-10-16T20:56:42Z,S002,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
+S002-029,2026-10-16T20:56:48Z,S002,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
+S002-030,2026-10-16T20:58:15Z,S002,descriptive,discovery,323,S002 market atlas (BH over all tests),35,,DESCRIPTIVE,,da8062281fb009948f0874aaa1348b31847cc624f1d899b1db25570b61701782,214829145ecc2e2254d90767fe70d62ce0b22674e24e3b3645d200caf72cac92,data/research/s002/20261016T205814Z_full,"full: 1685 days, 295 EIA rule days; value = tests with q < 0.1"
+S002-031,2026-10-16T20:58:50Z,S002,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S002 atlas (full): front month
+S002-032,2026-10-16T20:58:58Z,S002,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S002 atlas (full): front month
+S002-033,2026-10-16T20:58:58Z,S002,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
+S002-034,2026-10-16T20:59:05Z,S002,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
+S002-035,2026-10-16T20:59:58Z,S002,descriptive,discovery,323,S002 market atlas (BH over all tests),36,,DESCRIPTIVE,,65c43c93c606bf53f0edec7470bb4f7cb27363f1a1b48b2a05a28ab34f45c727,214829145ecc2e2254d90767fe70d62ce0b22674e24e3b3645d200caf72cac92,data/research/s002/20261016T205957Z_full,"full: 1685 days, 295 EIA rule days; value = tests with q < 0.1"
+S002-036,2026-10-16T21:08:14Z,S002,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S002 atlas (full): front month
+S002-037,2026-10-16T21:08:22Z,S002,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S002 atlas (full): front month
+S002-038,2026-10-16T21:08:22Z,S002,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
+S002-039,2026-10-16T21:08:28Z,S002,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
+S002-040,2026-10-16T21:09:15Z,S002,descriptive,discovery,323,S002 market atlas (BH over all tests),36,,DESCRIPTIVE,,b0e4acbd492a14e89a40b65d8d2c299bc265f31c9df72f0197eae005cba42ed6,214829145ecc2e2254d90767fe70d62ce0b22674e24e3b3645d200caf72cac92,data/research/s002/20261016T210915Z_full,"full: 1685 days, 295 EIA rule days; value = tests with q < 0.1"
+S002-041,2026-10-16T21:12:36Z,S002,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S002 atlas (full): front month
+S002-042,2026-10-16T21:12:45Z,S002,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S002 atlas (full): front month
+S002-043,2026-10-16T21:12:45Z,S002,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
+S002-044,2026-10-16T21:12:51Z,S002,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
+S002-045,2026-10-16T21:13:53Z,S002,descriptive,discovery,323,S002 market atlas (BH over all tests),36,,DESCRIPTIVE,,beec09f2e96ba27929e099dcab144acd851ecddb4f9fc0b2acb63a6a28775d0e,214829145ecc2e2254d90767fe70d62ce0b22674e24e3b3645d200caf72cac92,data/research/s002/20261016T211351Z_full,"full: 1685 days, 295 EIA rule days; value = tests with q < 0.1"

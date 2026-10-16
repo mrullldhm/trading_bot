@@ -98,10 +98,21 @@ def variance_ratio(r: np.ndarray, q: int) -> dict:
     theta = 0.0
     denom = (e @ e) ** 2
     for j in range(1, q):
-        delta = n * ((e[j:] ** 2) @ (e[:-j] ** 2)) / denom
+        delta = ((e[j:] ** 2) @ (e[:-j] ** 2)) / denom  # R007 #1: an extra factor n here shrank z by sqrt(n)
         theta += (2 * (q - j) / q) ** 2 * delta
     z = (vr - 1) / math.sqrt(theta) if theta > 0 else np.nan
     return {"vr": float(vr), "z": float(z), "n": n}
+
+
+def _t_cdf(x: float, df: int) -> float:
+    """Student-t CDF for x >= 0 by Simpson integration of the density (no scipy)."""
+    c = math.exp(math.lgamma((df + 1) / 2) - math.lgamma(df / 2)) / math.sqrt(df * math.pi)
+    m = 2000
+    u = np.linspace(0.0, x, m + 1)
+    w = np.where(np.arange(m + 1) % 2, 4.0, 2.0)
+    w[0] = w[-1] = 1.0
+    f = (1 + u * u / df) ** (-(df + 1) / 2)
+    return min(1.0, 0.5 + c * float(w @ f) * (x / m) / 3)
 
 
 @functools.lru_cache(maxsize=256)
@@ -111,24 +122,66 @@ def t_quantile(p: float, df: int) -> float:
         raise ValueError("need 0 < p < 1 and df >= 1")
     if p < 0.5:
         return -t_quantile(1 - p, df)
-    c = math.exp(math.lgamma((df + 1) / 2) - math.lgamma(df / 2)) / math.sqrt(df * math.pi)
-
-    def cdf(x: float) -> float:  # x >= 0
-        m = 2000
-        h = x / m
-        s = 0.0
-        for i in range(m + 1):
-            w = 1 if i in (0, m) else (4 if i % 2 else 2)
-            s += w * (1 + (i * h) ** 2 / df) ** (-(df + 1) / 2)
-        return 0.5 + c * s * h / 3
-
     lo, hi = 0.0, 1.0
-    while cdf(hi) < p:
+    while _t_cdf(hi, df) < p:
         hi *= 2
     for _ in range(60):
         mid = (lo + hi) / 2
-        lo, hi = (mid, hi) if cdf(mid) < p else (lo, mid)
+        lo, hi = (mid, hi) if _t_cdf(mid, df) < p else (lo, mid)
     return (lo + hi) / 2
+
+
+def t_pvalue(t: float, df: int) -> float:
+    """Two-sided p-value of a Student-t statistic."""
+    if math.isnan(t) or df < 1:
+        return float("nan")
+    x = min(abs(t), 60.0)
+    return max(0.0, 2 * (1 - _t_cdf(x, df)))
+
+
+def variance_ratio_days(r: np.ndarray, day: np.ndarray, q: int, n_boot: int = 500, seed: int = 0) -> dict:
+    """Variance ratio of q-period sums built only inside runs of consecutive returns of one trading day
+    (r is NaN at every gap; a new day starts a new run), with a trading-day bootstrap z (PROTOCOL: the day
+    is the unit of inference). VR > 1 = trending, < 1 = mean-reverting."""
+    r = np.asarray(r, float)
+    day = np.asarray(day)
+    if q < 2:
+        raise ValueError("need q >= 2")
+    if r.shape != day.shape:
+        raise ValueError("r and day must have the same length")
+    brk = np.isnan(r) | np.r_[True, day[1:] != day[:-1]]
+    run = np.cumsum(brk)
+    ok = ~np.isnan(r)
+    frame = pd.DataFrame({"r": r[ok], "run": run[ok], "day": day[ok]})
+    days = pd.unique(frame["day"])
+    di = pd.Index(days)
+    s1 = frame.groupby("day")["r"].sum().reindex(days).to_numpy()
+    s2 = (frame["r"] ** 2).groupby(frame["day"]).sum().reindex(days).to_numpy()
+    n1 = frame.groupby("day").size().reindex(days).to_numpy()
+    sums = frame.groupby("run")["r"].transform(lambda x: x.rolling(q).sum())
+    full = ~np.isnan(sums.to_numpy())
+    qd = frame["day"].to_numpy()[full]
+    qs = sums.to_numpy()[full]
+    q1 = np.bincount(di.get_indexer(qd), qs, len(days))
+    q2 = np.bincount(di.get_indexer(qd), qs ** 2, len(days))
+    m1 = np.bincount(di.get_indexer(qd), None, len(days))
+
+    def vr(w):
+        n, m = (w * n1).sum(), (w * m1).sum()
+        if m < 2 or n < 2:
+            return np.nan
+        var1 = (w * s2).sum() / n - ((w * s1).sum() / n) ** 2
+        varq = (w * q2).sum() / m - ((w * q1).sum() / m) ** 2
+        return varq / (q * var1) if var1 > 0 else np.nan
+
+    est = vr(np.ones(len(days)))
+    rng = np.random.default_rng(seed)
+    boot = np.array([vr(np.bincount(rng.integers(0, len(days), len(days)), minlength=len(days)))
+                     for _ in range(n_boot)])
+    se = float(np.nanstd(boot, ddof=1))
+    z = (est - 1) / se if se > 0 else np.nan
+    return {"vr": float(est), "se": se, "z": float(z), "p": 2 * (1 - ND.cdf(abs(z))) if np.isfinite(z) else np.nan,
+            "n": int(n1.sum()), "q_sums": int(m1.sum()), "days": len(days)}
 
 
 def mean_upper(x, conf: float = 0.95) -> float:

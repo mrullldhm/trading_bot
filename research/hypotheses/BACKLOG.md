@@ -40,6 +40,32 @@ cheapest (4-8 net ticks per trade); full-session holds (09:00-16:05) need 32+ ti
 | H014 | The same half-hour's return on previous days predicts today's | Repetitive institutional order flow (intraday periodicity) | Heston, Korajczyk, Sadka 2010; Claude | C | lag-1..20-day same-slot regression per half-hour | idea |
 | H015 | Front-second spread dislocation: fade a 20-day same-minute spread z-score extreme, hold 60 minutes | Temporary relative pressure between contracts mean-reverts | Codex | C | needs 2 CL legs (double cost); test spread P&L net of 2x costs | idea |
 | H016 | Roll-window pressure reversal (within-contract spread changes only) | Index-fund roll flows distort the curve temporarily | Mou 2011; both | C | roll days vs matched non-roll days; drop the 00:00 splice | idea |
+| H017 | Pre-settlement prompt pressure: at 14:00, if the 13:30-13:59 CL0-CL1 spread change agrees with the front's return and front volume share is high, trade the spread's direction 14:01-14:30 | Settlement / TAS hedgers push the prompt month first, then the outright | Codex R006 C1; Mou 2011 (indirect) | B | one fixed rule, non-roll days, vs matched 14:01 entries | idea |
+| H018 | Pre-EIA positioning drift: on EIA days trade the 09:30-09:59 direction 10:01-10:25, flat before 10:30 | Informed / hedger positioning ahead of the inventory number | Codex R006 C2; Kurov et al. (other releases) | B | sign rule on EIA days vs matched non-EIA weekdays | idea |
+| H019 | Prompt-contract EIA overreaction: fade the 10:30-10:34 CL0-CL1 spread change, hold CL0 10:36-11:30 | Headline traders over-express the shock in the prompt month | Codex R006 C3; Li & Geman 2018 | B | sign rule vs plain fade of CL0 (H003); judge on stress costs | idea |
+| H020 | NY-open sweep reversal: at 09:05, if CL0 and CL1 08:55-09:04 returns disagree, trade CL0 in CL1's direction 09:06-09:30 | Stops sweep the prompt month; spread arbitrage pulls it back | Codex R006 C4 | C | disagreement rule vs plain opening fade | idea |
+| H021 | Asia/London disagreement: at 07:55, if 20:00-03:00 and 03:00-07:54 disagree, trade London's direction 07:56-08:25 | European physical flow corrects thin Asian moves | Codex R006 C5; Boyarchenko et al. (indirect) | B/C | conditional sign rule vs unconditional London momentum | idea |
+| H022 | Next-day EIA correction: fade the release-day 10:30-11:00 return the next day 10:35-11:30 | Noisy inventory headline corrected after overnight analysis | Codex R006 C6 | C | one trade per release vs non-EIA Wednesdays | idea |
+| H023 | Whole-dollar pin: at 14:00 within 1-10 ticks of a whole dollar, trade toward it 14:01-14:30 | Long-gamma dealer hedging pins strikes into settlement | Codex R006 C7 (no option data) | C | exact rule vs the 11-20 tick band | idea |
+| H024 | Globex reopen gap fade: fade 16:05 -> 18:04 gap at 18:05, exit 20:00 | Thin reopen book overshoots | Codex R006 C8; adverse prior (K4.1) | C | one daily sign trade, 2-tick costs | idea |
+| H025 | Settlement continuation, conditioned: at 14:35 trade the 14:25-14:35 direction to 16:05 when the move / settlement volume is large | Settlement-benchmarked flow keeps arriving after the window (TAS / index hedges) | S002 (Claude) | C+ | naive base measured (IC 0.12, decaying); conditioning variables fixed before looking | idea |
+| H026 | Post-settlement drift: 14:30-15:00 is negative on average (-2.2 ticks, every year) | Settlement-window buying unwinds | S002 (Claude) | C | component / filter only (below cost alone) | idea |
+
+## Ranking after S002 (2026-10-17; discovery evidence, validated by R009)
+Measured in [S002](../studies/S002-atlas/report.md). "Base" = what the atlas saw for the naive version;
+bar = S001 (IC ~0.2, ~4-8 net ticks on short windows).
+
+| Rank | Idea | Atlas evidence | Verdict |
+|---|---|---|---|
+| 1 | **H025** (new, S002): settlement continuation, conditioned (size of the 14:25-14:35 move, settlement volume), trade 14:35-16:05 | naive IC 0.12, gross 2.6 ticks, q 5e-5; **decaying** 4.4 / 2.6 / 0.4 by block | the only measured base; must gain 2-3x and hold in 2015-16. Low-moderate prior |
+| 2 | H012 / H026 (new): post-settlement drift, short 14:30-15:00 (or as a filter on H025) | -2.2 ticks, t -5.9, every year, all blocks | stable but below cost alone (gross Sharpe ~2.3, net ~0); keep as a component |
+| 3 | H001: 09:00-14:00 -> 14:00-14:30 | edge 0.95 ticks, q 0.73 | weak; test only if cheap |
+| 3 | H005 / H004: overnight -> NY, by term structure | 4.6 ticks (IC 0.04); contango 6.4 ticks, q 0.19 | weak, mixed blocks |
+| 4 | H006 (fade after settlement) | the atlas shows *continuation*, not reversal | **reversed**: superseded by H025 |
+| 4 | H017, H019, H020 (CL0 / CL1 spread signals) | spread change predicts nothing at 09:00, 14:00, EIA (all q > 0.6) | demoted to C- |
+| 4 | H003, H018, H022 (EIA direction) | EIA moves 5.5x bigger but direction-free after 5 min | demoted |
+| 4 | H009, short-horizon fades | VR < 1 is bid-ask bounce | demoted |
+| - | H007, H008, H010, H011, H013-H016, H021, H023, H024 | not measured by the atlas | unchanged; S003 (ceiling) decides which decision times are worth them |
 
 ## Parked / rejected
 None yet. Strategies 1-8 are in `prior-work/STRATEGIES-1-8.md`; do not re-test them in another costume.

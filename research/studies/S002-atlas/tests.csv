@@ -1,0 +1,324 @@
+key,family,test,stat,p,n,q
+mean_return|bin 18:00,mean_return,bin 18:00,-1.2065,0.22763,1641,0.6229
+mean_return|bin 18:30,mean_return,bin 18:30,-1.2213,0.22196,1618,0.6229
+mean_return|bin 19:00,mean_return,bin 19:00,-0.76441,0.44462,1637,0.84453
+mean_return|bin 19:30,mean_return,bin 19:30,-0.29817,0.76557,1617,0.969
+mean_return|bin 20:00,mean_return,bin 20:00,-0.32612,0.74433,1667,0.969
+mean_return|bin 20:30,mean_return,bin 20:30,0.12206,0.90285,1670,0.98419
+mean_return|bin 21:00,mean_return,bin 21:00,-0.80934,0.41832,1671,0.84379
+mean_return|bin 21:30,mean_return,bin 21:30,0.79227,0.4282,1670,0.84379
+mean_return|bin 22:00,mean_return,bin 22:00,-0.12584,0.89986,1667,0.98419
+mean_return|bin 22:30,mean_return,bin 22:30,0.63955,0.52247,1664,0.89764
+mean_return|bin 23:00,mean_return,bin 23:00,-0.15373,0.87782,1662,0.98419
+mean_return|bin 23:30,mean_return,bin 23:30,-0.43466,0.66381,1661,0.9432
+mean_return|bin 00:00,mean_return,bin 00:00,0.15621,0.87587,1670,0.98419
+mean_return|bin 00:30,mean_return,bin 00:30,-0.61064,0.54144,1666,0.91719
+mean_return|bin 01:00,mean_return,bin 01:00,-2.837,0.0045543,1661,0.04597
+mean_return|bin 01:30,mean_return,bin 01:30,0.48845,0.62523,1670,0.94302
+mean_return|bin 02:00,mean_return,bin 02:00,-0.30422,0.76096,1673,0.969
+mean_return|bin 02:30,mean_return,bin 02:30,-0.51788,0.60454,1673,0.94302
+mean_return|bin 03:00,mean_return,bin 03:00,-1.3109,0.1899,1675,0.58417
+mean_return|bin 03:30,mean_return,bin 03:30,-0.012686,0.98988,1677,0.99022
+mean_return|bin 04:00,mean_return,bin 04:00,-2.1292,0.033235,1678,0.18195
+mean_return|bin 04:30,mean_return,bin 04:30,2.2675,0.023357,1678,0.15807
+mean_return|bin 05:00,mean_return,bin 05:00,1.8207,0.068653,1677,0.28429
+mean_return|bin 05:30,mean_return,bin 05:30,0.15991,0.87295,1679,0.98419
+mean_return|bin 06:00,mean_return,bin 06:00,0.043653,0.96518,1680,0.9844
+mean_return|bin 06:30,mean_return,bin 06:30,-1.834,0.066649,1680,0.27958
+mean_return|bin 07:00,mean_return,bin 07:00,1.4768,0.13972,1681,0.48011
+mean_return|bin 07:30,mean_return,bin 07:30,-1.1435,0.25285,1684,0.64817
+mean_return|bin 08:00,mean_return,bin 08:00,-0.69006,0.49016,1684,0.85579
+mean_return|bin 08:30,mean_return,bin 08:30,-2.2345,0.025448,1684,0.15807
+mean_return|bin 09:00,mean_return,bin 09:00,0.056672,0.95481,1684,0.9844
+mean_return|bin 09:30,mean_return,bin 09:30,-2.239,0.025155,1684,0.15807
+mean_return|bin 10:00,mean_return,bin 10:00,0.92382,0.35558,1684,0.79644
+mean_return|bin 10:30,mean_return,bin 10:30,0.35503,0.72257,1684,0.96197
+mean_return|bin 11:00,mean_return,bin 11:00,-0.4242,0.67142,1684,0.9432
+mean_return|bin 11:30,mean_return,bin 11:30,0.81168,0.41697,1684,0.84379
+mean_return|bin 12:00,mean_return,bin 12:00,-1.1199,0.26278,1684,0.66056
+mean_return|bin 12:30,mean_return,bin 12:30,2.3502,0.018765,1643,0.13707
+mean_return|bin 13:00,mean_return,bin 13:00,0.47886,0.63204,1643,0.94302
+mean_return|bin 13:30,mean_return,bin 13:30,0.49431,0.62109,1643,0.94302
+mean_return|bin 14:00,mean_return,bin 14:00,2.3437,0.019096,1617,0.13707
+mean_return|bin 14:30,mean_return,bin 14:30,-5.9247,3.1292e-09,1617,7.7748e-08
+mean_return|bin 15:00,mean_return,bin 15:00,0.86572,0.38664,1616,0.82706
+mean_return|bin 15:30,mean_return,bin 15:30,0.065687,0.94763,1617,0.98419
+mean_return|session asia,mean_return,session asia,-1.3282,0.1841,1618,0.58417
+mean_return|session london,mean_return,session london,-0.36621,0.71421,1678,0.96197
+mean_return|session ny,mean_return,session ny,-0.34161,0.73264,1684,0.96197
+variance_ratio|asia q=5,variance_ratio,asia q=5,-20.557,0,1683,0
+variance_ratio|asia q=15,variance_ratio,asia q=15,-18.484,0,1683,0
+variance_ratio|asia q=30,variance_ratio,asia q=30,-13.917,0,1683,0
+variance_ratio|asia q=60,variance_ratio,asia q=60,-8.0409,8.8818e-16,1683,3.1876e-14
+variance_ratio|london q=5,variance_ratio,london q=5,-14.939,0,1684,0
+variance_ratio|london q=15,variance_ratio,london q=15,-11.431,0,1684,0
+variance_ratio|london q=30,variance_ratio,london q=30,-6.5069,7.6732e-11,1684,2.4784e-09
+variance_ratio|london q=60,variance_ratio,london q=60,-6.2872,3.2331e-10,1684,8.7024e-09
+variance_ratio|ny q=5,variance_ratio,ny q=5,-20.014,0,1684,0
+variance_ratio|ny q=15,variance_ratio,ny q=15,-16.547,0,1684,0
+variance_ratio|ny q=30,variance_ratio,ny q=30,-10.077,0,1684,0
+variance_ratio|ny q=60,variance_ratio,ny q=60,-5.2373,1.6298e-07,1684,3.7601e-06
+autocorr_30m|18:00->18:30,autocorr_30m,18:00->18:30,-0.03509,0.15843,1617,0.52755
+autocorr_30m|18:30->19:00,autocorr_30m,18:30->19:00,-0.071775,0.0039137,1614,0.043591
+autocorr_30m|19:00->19:30,autocorr_30m,19:00->19:30,-0.073288,0.0032478,1611,0.038854
+autocorr_30m|19:30->20:00,autocorr_30m,19:30->20:00,0.018687,0.45311,1614,0.85089
+autocorr_30m|20:00->20:30,autocorr_30m,20:00->20:30,0.10647,1.3472e-05,1664,0.00027196
+autocorr_30m|20:30->21:00,autocorr_30m,20:30->21:00,0.047773,0.051086,1668,0.24266
+autocorr_30m|21:00->21:30,autocorr_30m,21:00->21:30,0.070196,0.0041269,1668,0.044433
+autocorr_30m|21:30->22:00,autocorr_30m,21:30->22:00,0.062543,0.010715,1664,0.096139
+autocorr_30m|22:00->22:30,autocorr_30m,22:00->22:30,0.058987,0.01617,1662,0.13058
+autocorr_30m|22:30->23:00,autocorr_30m,22:30->23:00,0.10585,1.5859e-05,1656,0.00030132
+autocorr_30m|23:00->23:30,autocorr_30m,23:00->23:30,0.0069521,0.77734,1657,0.97601
+autocorr_30m|23:30->00:00,autocorr_30m,23:30->00:00,-0.083163,0.00069214,1661,0.010162
+autocorr_30m|00:00->00:30,autocorr_30m,00:00->00:30,-0.0047131,0.84779,1661,0.98419
+autocorr_30m|00:30->01:00,autocorr_30m,00:30->01:00,-0.02229,0.36395,1661,0.80518
+autocorr_30m|01:00->01:30,autocorr_30m,01:00->01:30,-0.0063301,0.79663,1660,0.98419
+autocorr_30m|01:30->02:00,autocorr_30m,01:30->02:00,0.055028,0.024657,1667,0.15807
+autocorr_30m|02:00->02:30,autocorr_30m,02:00->02:30,0.0013111,0.95732,1669,0.9844
+autocorr_30m|02:30->03:00,autocorr_30m,02:30->03:00,-0.046408,0.057949,1670,0.25756
+autocorr_30m|03:00->03:30,autocorr_30m,03:00->03:30,0.031618,0.19614,1673,0.59769
+autocorr_30m|03:30->04:00,autocorr_30m,03:30->04:00,-0.028471,0.24405,1676,0.63209
+autocorr_30m|04:00->04:30,autocorr_30m,04:00->04:30,-0.020635,0.39853,1676,0.83512
+autocorr_30m|04:30->05:00,autocorr_30m,04:30->05:00,0.086414,0.00039917,1675,0.0064466
+autocorr_30m|05:00->05:30,autocorr_30m,05:00->05:30,-0.0032417,0.8945,1676,0.98419
+autocorr_30m|05:30->06:00,autocorr_30m,05:30->06:00,0.018187,0.45671,1677,0.85271
+autocorr_30m|06:00->06:30,autocorr_30m,06:00->06:30,-0.029283,0.23043,1679,0.6229
+autocorr_30m|06:30->07:00,autocorr_30m,06:30->07:00,0.032108,0.18838,1680,0.58417
+autocorr_30m|07:00->07:30,autocorr_30m,07:00->07:30,-0.023907,0.32729,1681,0.76604
+autocorr_30m|07:30->08:00,autocorr_30m,07:30->08:00,-0.077842,0.0013894,1684,0.018699
+autocorr_30m|08:00->08:30,autocorr_30m,08:00->08:30,-0.0068242,0.7796,1684,0.97601
+autocorr_30m|08:30->09:00,autocorr_30m,08:30->09:00,-0.05491,0.024238,1684,0.15807
+autocorr_30m|09:00->09:30,autocorr_30m,09:00->09:30,0.03813,0.11779,1684,0.41809
+autocorr_30m|09:30->10:00,autocorr_30m,09:30->10:00,0.0025059,0.91816,1684,0.98419
+autocorr_30m|10:00->10:30,autocorr_30m,10:00->10:30,0.058848,0.015726,1684,0.13024
+autocorr_30m|10:30->11:00,autocorr_30m,10:30->11:00,0.026489,0.2773,1684,0.67854
+autocorr_30m|11:00->11:30,autocorr_30m,11:00->11:30,0.029093,0.23277,1684,0.6229
+autocorr_30m|11:30->12:00,autocorr_30m,11:30->12:00,0.010299,0.67278,1684,0.9432
+autocorr_30m|12:00->12:30,autocorr_30m,12:00->12:30,-0.0039088,0.8742,1643,0.98419
+autocorr_30m|12:30->13:00,autocorr_30m,12:30->13:00,0.021601,0.38156,1643,0.82163
+autocorr_30m|13:00->13:30,autocorr_30m,13:00->13:30,-0.0025523,0.91767,1643,0.98419
+autocorr_30m|13:30->14:00,autocorr_30m,13:30->14:00,0.06531,0.0086133,1617,0.081827
+autocorr_30m|14:00->14:30,autocorr_30m,14:00->14:30,-0.055674,0.02517,1617,0.15807
+autocorr_30m|14:30->15:00,autocorr_30m,14:30->15:00,-0.080617,0.0011806,1616,0.01658
+autocorr_30m|15:00->15:30,autocorr_30m,15:00->15:30,0.053077,0.032881,1616,0.18195
+segment|overnight 18:00-09:00 -> 09:00-16:05 corr,segment,overnight 18:00-09:00 -> 09:00-16:05 corr,0.039686,0.11199,1605,0.40193
+segment|overnight 18:00-09:00 -> 09:00-16:05 sign edge,segment,overnight 18:00-09:00 -> 09:00-16:05 sign edge,1.734,0.082913,1605,0.32266
+segment|overnight 18:00-09:00 -> 09:00-10:00 corr,segment,overnight 18:00-09:00 -> 09:00-10:00 corr,-0.042965,0.085298,1605,0.32799
+segment|overnight 18:00-09:00 -> 09:00-10:00 sign edge,segment,overnight 18:00-09:00 -> 09:00-10:00 sign edge,-1.135,0.25638,1605,0.65205
+segment|first hour 09:00-10:00 -> 10:00-16:05 corr,segment,first hour 09:00-10:00 -> 10:00-16:05 corr,-0.0089273,0.71544,1670,0.96197
+segment|first hour 09:00-10:00 -> 10:00-16:05 sign edge,segment,first hour 09:00-10:00 -> 10:00-16:05 sign edge,-0.18285,0.85492,1670,0.98419
+segment|first half-hour 09:00-09:30 -> 14:00-14:30 corr,segment,first half-hour 09:00-09:30 -> 14:00-14:30 corr,0.0097735,0.69606,1600,0.95671
+segment|first half-hour 09:00-09:30 -> 14:00-14:30 sign edge,segment,first half-hour 09:00-09:30 -> 14:00-14:30 sign edge,-0.080851,0.93556,1600,0.98419
+segment|09:00-14:00 -> 14:00-14:30 corr,segment,09:00-14:00 -> 14:00-14:30 corr,0.039838,0.11007,1610,0.39945
+segment|09:00-14:00 -> 14:00-14:30 sign edge,segment,09:00-14:00 -> 14:00-14:30 sign edge,1.0247,0.3055,1610,0.7333
+segment|09:00-14:00 -> 14:00-16:05 corr,segment,09:00-14:00 -> 14:00-16:05 corr,0.011303,0.64778,1636,0.94302
+segment|09:00-14:00 -> 14:00-16:05 sign edge,segment,09:00-14:00 -> 14:00-16:05 sign edge,0.29499,0.768,1636,0.969
+segment|settlement 14:25-14:35 -> 14:35-16:05 corr,segment,settlement 14:25-14:35 -> 14:35-16:05 corr,0.16122,1.1864e-10,1578,3.4837e-09
+segment|settlement 14:25-14:35 -> 14:35-16:05 sign edge,segment,settlement 14:25-14:35 -> 14:35-16:05 sign edge,4.7307,2.2376e-06,1578,4.8184e-05
+segment|09:00-14:30 -> 20:00-03:00 next day corr,segment,09:00-14:30 -> 20:00-03:00 next day corr,-0.0091338,0.716,1589,0.96197
+segment|09:00-14:30 -> 20:00-03:00 next day sign edge,segment,09:00-14:30 -> 20:00-03:00 next day sign edge,-0.92372,0.35563,1589,0.79644
+segment|EIA days: pre-EIA 09:00-10:30 -> 10:30-11:00 corr,segment,EIA days: pre-EIA 09:00-10:30 -> 10:30-11:00 corr,0.035712,0.544,291,0.91719
+segment|EIA days: pre-EIA 09:00-10:30 -> 10:30-11:00 sign edge,segment,EIA days: pre-EIA 09:00-10:30 -> 10:30-11:00 sign edge,0.31697,0.75127,291,0.969
+segment|EIA days: pre-EIA 09:00-10:30 -> 10:30-12:00 corr,segment,EIA days: pre-EIA 09:00-10:30 -> 10:30-12:00 corr,0.011535,0.84467,291,0.98419
+segment|EIA days: pre-EIA 09:00-10:30 -> 10:30-12:00 sign edge,segment,EIA days: pre-EIA 09:00-10:30 -> 10:30-12:00 sign edge,0.18218,0.85544,291,0.98419
+segment|EIA days: 10:30-10:35 -> 10:35-11:30 corr,segment,EIA days: 10:30-10:35 -> 10:35-11:30 corr,0.02409,0.68029,295,0.9432
+segment|EIA days: 10:30-10:35 -> 10:35-11:30 sign edge,segment,EIA days: 10:30-10:35 -> 10:35-11:30 sign edge,-0.22092,0.82515,295,0.98419
+segment|non-EIA days: 10:30-10:35 -> 10:35-11:30 corr,segment,non-EIA days: 10:30-10:35 -> 10:35-11:30 corr,-0.026616,0.33046,1339,0.7679
+segment|non-EIA days: 10:30-10:35 -> 10:35-11:30 sign edge,segment,non-EIA days: 10:30-10:35 -> 10:35-11:30 sign edge,-1.913,0.05575,1339,0.25756
+segment|NY day t -> NY day t+1 corr,segment,NY day t -> NY day t+1 corr,-0.066387,0.0065518,1676,0.064129
+segment|NY day t -> NY day t+1 sign edge,segment,NY day t -> NY day t+1 sign edge,-2.1836,0.028995,1676,0.16724
+segment|NY day t -> overnight t+1 corr,segment,NY day t -> overnight t+1 corr,-0.017288,0.48819,1610,0.85579
+segment|NY day t -> overnight t+1 sign edge,segment,NY day t -> overnight t+1 sign edge,-0.61857,0.5362,1610,0.91636
+event_drift|09:00 open +5m,event_drift,09:00 open +5m,-0.58172,0.56075,1684,0.92533
+event_drift|09:00 open +30m,event_drift,09:00 open +30m,0.056672,0.95481,1684,0.9844
+event_continuation|09:00 open,event_continuation,09:00 open,0.057254,0.018788,1684,0.13707
+event_drift|EIA 10:30 +5m,event_drift,EIA 10:30 +5m,-2.0502,0.040347,295,0.20557
+event_drift|EIA 10:30 +30m,event_drift,EIA 10:30 +30m,-0.78065,0.43501,295,0.84379
+event_continuation|EIA 10:30,event_continuation,EIA 10:30,0.023898,0.68271,295,0.9432
+event_drift|settlement 14:28-14:30 +2m,event_drift,settlement 14:28-14:30 +2m,0.44174,0.65868,1617,0.9432
+event_drift|settlement 14:28-14:30 +30m,event_drift,settlement 14:28-14:30 +30m,-4.0605,4.8968e-05,1617,0.00083246
+event_continuation|settlement 14:28-14:30,event_continuation,settlement 14:28-14:30,0.10559,2.0931e-05,1617,0.00037559
+event_drift|London 03:00 +5m,event_drift,London 03:00 +5m,-2.1048,0.035306,1676,0.18695
+event_drift|London 03:00 +30m,event_drift,London 03:00 +30m,-1.3109,0.1899,1675,0.58417
+event_continuation|London 03:00,event_continuation,London 03:00,0.0034738,0.8871,1673,0.98419
+regime_predict|term structure=contango: overnight -> NY corr,regime_predict,term structure=contango: overnight -> NY corr,0.054635,0.049779,1290,0.23998
+regime_predict|term structure=contango: overnight -> NY sign edge,regime_predict,term structure=contango: overnight -> NY sign edge,2.1058,0.035226,1290,0.18695
+regime_predict|term structure=contango: first hour -> rest corr,regime_predict,term structure=contango: first hour -> rest corr,-0.011596,0.67546,1306,0.9432
+regime_predict|term structure=contango: first hour -> rest sign edge,regime_predict,term structure=contango: first hour -> rest sign edge,-0.85924,0.39021,1306,0.82919
+regime_mean|term structure=contango,regime_mean,term structure=contango,0.51842,0.60416,1315,0.94302
+regime_predict|term structure=backwardation: overnight -> NY corr,regime_predict,term structure=backwardation: overnight -> NY corr,-0.069404,0.23871,290,0.62685
+regime_predict|term structure=backwardation: overnight -> NY sign edge,regime_predict,term structure=backwardation: overnight -> NY sign edge,-0.17801,0.85871,290,0.98419
+regime_predict|term structure=backwardation: first hour -> rest corr,regime_predict,term structure=backwardation: first hour -> rest corr,0.10279,0.078459,294,0.32079
+regime_predict|term structure=backwardation: first hour -> rest sign edge,regime_predict,term structure=backwardation: first hour -> rest sign edge,1.8789,0.060263,294,0.25953
+regime_mean|term structure=backwardation,regime_mean,term structure=backwardation,-0.20035,0.84121,299,0.98419
+regime_predict|prior-day NY vol tercile=high: overnight -> NY corr,regime_predict,prior-day NY vol tercile=high: overnight -> NY corr,0.05198,0.22784,540,0.6229
+regime_predict|prior-day NY vol tercile=high: overnight -> NY sign edge,regime_predict,prior-day NY vol tercile=high: overnight -> NY sign edge,0.49894,0.61783,540,0.94302
+regime_predict|prior-day NY vol tercile=high: first hour -> rest corr,regime_predict,prior-day NY vol tercile=high: first hour -> rest corr,-0.014599,0.73078,558,0.96197
+regime_predict|prior-day NY vol tercile=high: first hour -> rest sign edge,regime_predict,prior-day NY vol tercile=high: first hour -> rest sign edge,0.015427,0.98769,558,0.99022
+regime_mean|prior-day NY vol tercile=high,regime_mean,prior-day NY vol tercile=high,1.632,0.10268,561,0.3812
+regime_predict|prior-day NY vol tercile=mid: overnight -> NY corr,regime_predict,prior-day NY vol tercile=mid: overnight -> NY corr,0.020278,0.64168,529,0.94302
+regime_predict|prior-day NY vol tercile=mid: overnight -> NY sign edge,regime_predict,prior-day NY vol tercile=mid: overnight -> NY sign edge,0.88185,0.37786,529,0.82163
+regime_predict|prior-day NY vol tercile=mid: first hour -> rest corr,regime_predict,prior-day NY vol tercile=mid: first hour -> rest corr,0.024675,0.5615,556,0.92533
+regime_predict|prior-day NY vol tercile=mid: first hour -> rest sign edge,regime_predict,prior-day NY vol tercile=mid: first hour -> rest sign edge,0.42965,0.66745,556,0.9432
+regime_mean|prior-day NY vol tercile=mid,regime_mean,prior-day NY vol tercile=mid,-1.2531,0.21017,561,0.6228
+regime_predict|prior-day NY vol tercile=low: overnight -> NY corr,regime_predict,prior-day NY vol tercile=low: overnight -> NY corr,0.03108,0.47315,535,0.85378
+regime_predict|prior-day NY vol tercile=low: overnight -> NY sign edge,regime_predict,prior-day NY vol tercile=low: overnight -> NY sign edge,2.0974,0.035957,535,0.18732
+regime_predict|prior-day NY vol tercile=low: first hour -> rest corr,regime_predict,prior-day NY vol tercile=low: first hour -> rest corr,-0.052336,0.21874,554,0.6229
+regime_predict|prior-day NY vol tercile=low: first hour -> rest sign edge,regime_predict,prior-day NY vol tercile=low: first hour -> rest sign edge,-0.98388,0.32518,554,0.76604
+regime_mean|prior-day NY vol tercile=low,regime_mean,prior-day NY vol tercile=low,-0.18948,0.84972,560,0.98419
+regime_predict|days to expiry=16-40: overnight -> NY corr,regime_predict,days to expiry=16-40: overnight -> NY corr,0.077184,0.02955,795,0.16745
+regime_predict|days to expiry=16-40: overnight -> NY sign edge,regime_predict,days to expiry=16-40: overnight -> NY sign edge,1.8708,0.061371,795,0.26083
+regime_predict|days to expiry=16-40: first hour -> rest corr,regime_predict,days to expiry=16-40: first hour -> rest corr,-0.038589,0.27088,816,0.67304
+regime_predict|days to expiry=16-40: first hour -> rest sign edge,regime_predict,days to expiry=16-40: first hour -> rest sign edge,-0.66467,0.50626,816,0.87445
+regime_mean|days to expiry=16-40,regime_mean,days to expiry=16-40,0.46796,0.63982,823,0.94302
+regime_predict|days to expiry=11-15: overnight -> NY corr,regime_predict,days to expiry=11-15: overnight -> NY corr,-0.0068977,0.90706,289,0.98419
+regime_predict|days to expiry=11-15: overnight -> NY sign edge,regime_predict,days to expiry=11-15: overnight -> NY sign edge,0.92856,0.35312,289,0.79644
+regime_predict|days to expiry=11-15: first hour -> rest corr,regime_predict,days to expiry=11-15: first hour -> rest corr,-0.04587,0.43887,287,0.84379
+regime_predict|days to expiry=11-15: first hour -> rest sign edge,regime_predict,days to expiry=11-15: first hour -> rest sign edge,-0.72766,0.46682,287,0.85378
+regime_mean|days to expiry=11-15,regime_mean,days to expiry=11-15,1.1635,0.24462,291,0.63209
+regime_predict|days to expiry=6-10: overnight -> NY corr,regime_predict,days to expiry=6-10: overnight -> NY corr,-0.0091949,0.87483,296,0.98419
+regime_predict|days to expiry=6-10: overnight -> NY sign edge,regime_predict,days to expiry=6-10: overnight -> NY sign edge,0.012259,0.99022,296,0.99022
+regime_predict|days to expiry=6-10: first hour -> rest corr,regime_predict,days to expiry=6-10: first hour -> rest corr,0.074386,0.20114,297,0.60718
+regime_predict|days to expiry=6-10: first hour -> rest sign edge,regime_predict,days to expiry=6-10: first hour -> rest sign edge,0.96131,0.3364,297,0.77061
+regime_mean|days to expiry=6-10,regime_mean,days to expiry=6-10,-0.29557,0.76756,299,0.969
+regime_predict|days to expiry=<=5: overnight -> NY corr,regime_predict,days to expiry=<=5: overnight -> NY corr,0.0051371,0.94245,200,0.98419
+regime_predict|days to expiry=<=5: overnight -> NY sign edge,regime_predict,days to expiry=<=5: overnight -> NY sign edge,0.49124,0.62325,200,0.94302
+regime_predict|days to expiry=<=5: first hour -> rest corr,regime_predict,days to expiry=<=5: first hour -> rest corr,0.13421,0.058125,200,0.25756
+regime_predict|days to expiry=<=5: first hour -> rest sign edge,regime_predict,days to expiry=<=5: first hour -> rest sign edge,0.70791,0.479,200,0.8548
+regime_mean|days to expiry=<=5,regime_mean,days to expiry=<=5,-0.76038,0.44703,201,0.84453
+regime_predict|roll week=no: overnight -> NY corr,regime_predict,roll week=no: overnight -> NY corr,0.059403,0.040732,1187,0.20557
+regime_predict|roll week=no: overnight -> NY sign edge,regime_predict,roll week=no: overnight -> NY sign edge,2.3719,0.017695,1187,0.13707
+regime_predict|roll week=no: first hour -> rest corr,regime_predict,roll week=no: first hour -> rest corr,-0.03458,0.22995,1207,0.6229
+regime_predict|roll week=no: first hour -> rest sign edge,regime_predict,roll week=no: first hour -> rest sign edge,-0.78563,0.43208,1207,0.84379
+regime_mean|roll week=no,regime_mean,roll week=no,0.7347,0.46252,1218,0.85378
+regime_predict|roll week=yes: overnight -> NY corr,regime_predict,roll week=yes: overnight -> NY corr,-0.036661,0.47265,386,0.85378
+regime_predict|roll week=yes: overnight -> NY sign edge,regime_predict,roll week=yes: overnight -> NY sign edge,-0.31681,0.75139,386,0.969
+regime_predict|roll week=yes: first hour -> rest corr,regime_predict,roll week=yes: first hour -> rest corr,0.12516,0.013863,386,0.11784
+regime_predict|roll week=yes: first hour -> rest sign edge,regime_predict,roll week=yes: first hour -> rest sign edge,1.1174,0.26382,386,0.66056
+regime_mean|roll week=yes,regime_mean,roll week=yes,-0.48848,0.62521,389,0.94302
+regime_predict|month=6: overnight -> NY corr,regime_predict,month=6: overnight -> NY corr,0.1072,0.21247,137,0.6229
+regime_predict|month=6: overnight -> NY sign edge,regime_predict,month=6: overnight -> NY sign edge,1.3927,0.16371,137,0.53958
+regime_predict|month=6: first hour -> rest corr,regime_predict,month=6: first hour -> rest corr,-0.020327,0.80958,143,0.98419
+regime_predict|month=6: first hour -> rest sign edge,regime_predict,month=6: first hour -> rest sign edge,-0.56034,0.57525,143,0.93756
+regime_mean|month=6,regime_mean,month=6,1.071,0.28416,145,0.6901
+regime_predict|month=7: overnight -> NY corr,regime_predict,month=7: overnight -> NY corr,-0.012937,0.87641,147,0.98419
+regime_predict|month=7: overnight -> NY sign edge,regime_predict,month=7: overnight -> NY sign edge,-0.8116,0.41702,147,0.84379
+regime_predict|month=7: first hour -> rest corr,regime_predict,month=7: first hour -> rest corr,0.025835,0.75124,153,0.969
+regime_predict|month=7: first hour -> rest sign edge,regime_predict,month=7: first hour -> rest sign edge,0.52606,0.59884,153,0.94302
+regime_mean|month=7,regime_mean,month=7,-0.71307,0.4758,154,0.8538
+regime_predict|month=8: overnight -> NY corr,regime_predict,month=8: overnight -> NY corr,0.10905,0.18706,148,0.58417
+regime_predict|month=8: overnight -> NY sign edge,regime_predict,month=8: overnight -> NY sign edge,0.096985,0.92274,148,0.98419
+regime_predict|month=8: first hour -> rest corr,regime_predict,month=8: first hour -> rest corr,-0.099223,0.21932,155,0.6229
+regime_predict|month=8: first hour -> rest sign edge,regime_predict,month=8: first hour -> rest sign edge,-0.21682,0.82835,155,0.98419
+regime_mean|month=8,regime_mean,month=8,0.3445,0.73047,155,0.96197
+regime_predict|month=9: overnight -> NY corr,regime_predict,month=9: overnight -> NY corr,0.14844,0.082287,138,0.32266
+regime_predict|month=9: overnight -> NY sign edge,regime_predict,month=9: overnight -> NY sign edge,2.0374,0.041614,138,0.20679
+regime_predict|month=9: first hour -> rest corr,regime_predict,month=9: first hour -> rest corr,-0.085134,0.30693,146,0.7333
+regime_predict|month=9: first hour -> rest sign edge,regime_predict,month=9: first hour -> rest sign edge,-1.1787,0.23853,146,0.62685
+regime_mean|month=9,regime_mean,month=9,0.035153,0.97196,147,0.9844
+regime_predict|month=10: overnight -> NY corr,regime_predict,month=10: overnight -> NY corr,-0.038562,0.64516,145,0.94302
+regime_predict|month=10: overnight -> NY sign edge,regime_predict,month=10: overnight -> NY sign edge,0.074003,0.94101,145,0.98419
+regime_predict|month=10: first hour -> rest corr,regime_predict,month=10: first hour -> rest corr,0.0028437,0.97245,150,0.9844
+regime_predict|month=10: first hour -> rest sign edge,regime_predict,month=10: first hour -> rest sign edge,0.40795,0.68331,150,0.9432
+regime_mean|month=10,regime_mean,month=10,-0.21855,0.827,154,0.98419
+regime_predict|month=11: overnight -> NY corr,regime_predict,month=11: overnight -> NY corr,0.043101,0.60926,143,0.94302
+regime_predict|month=11: overnight -> NY sign edge,regime_predict,month=11: overnight -> NY sign edge,1.4798,0.13892,143,0.48011
+regime_predict|month=11: first hour -> rest corr,regime_predict,month=11: first hour -> rest corr,0.046477,0.57616,147,0.93756
+regime_predict|month=11: first hour -> rest sign edge,regime_predict,month=11: first hour -> rest sign edge,0.10573,0.9158,147,0.98419
+regime_mean|month=11,regime_mean,month=11,-0.84027,0.40076,148,0.83512
+regime_predict|month=12: overnight -> NY corr,regime_predict,month=12: overnight -> NY corr,-0.0464,0.58078,144,0.93796
+regime_predict|month=12: overnight -> NY sign edge,regime_predict,month=12: overnight -> NY sign edge,-0.77886,0.43606,144,0.84379
+regime_predict|month=12: first hour -> rest corr,regime_predict,month=12: first hour -> rest corr,0.27983,0.00054758,149,0.0084224
+regime_predict|month=12: first hour -> rest sign edge,regime_predict,month=12: first hour -> rest sign edge,1.9009,0.057322,149,0.25756
+regime_mean|month=12,regime_mean,month=12,-0.074766,0.9404,149,0.98419
+regime_predict|month=1: overnight -> NY corr,regime_predict,month=1: overnight -> NY corr,-0.015291,0.86779,121,0.98419
+regime_predict|month=1: overnight -> NY sign edge,regime_predict,month=1: overnight -> NY sign edge,0.34297,0.73162,121,0.96197
+regime_predict|month=1: first hour -> rest corr,regime_predict,month=1: first hour -> rest corr,0.0116,0.89867,123,0.98419
+regime_predict|month=1: first hour -> rest sign edge,regime_predict,month=1: first hour -> rest sign edge,-0.72411,0.469,123,0.85378
+regime_mean|month=1,regime_mean,month=1,-0.77883,0.43608,125,0.84379
+regime_predict|month=2: overnight -> NY corr,regime_predict,month=2: overnight -> NY corr,-0.048445,0.60715,115,0.94302
+regime_predict|month=2: overnight -> NY sign edge,regime_predict,month=2: overnight -> NY sign edge,-0.10359,0.9175,115,0.98419
+regime_predict|month=2: first hour -> rest corr,regime_predict,month=2: first hour -> rest corr,-0.07754,0.39991,120,0.83512
+regime_predict|month=2: first hour -> rest sign edge,regime_predict,month=2: first hour -> rest sign edge,0.070458,0.94383,120,0.98419
+regime_mean|month=2,regime_mean,month=2,-0.072382,0.9423,120,0.98419
+regime_predict|month=3: overnight -> NY corr,regime_predict,month=3: overnight -> NY corr,0.032667,0.71983,123,0.96197
+regime_predict|month=3: overnight -> NY sign edge,regime_predict,month=3: overnight -> NY sign edge,0.88758,0.37477,123,0.82163
+regime_predict|month=3: first hour -> rest corr,regime_predict,month=3: first hour -> rest corr,0.027472,0.75636,130,0.969
+regime_predict|month=3: first hour -> rest sign edge,regime_predict,month=3: first hour -> rest sign edge,0.24354,0.80759,130,0.98419
+regime_mean|month=3,regime_mean,month=3,1.4119,0.15798,130,0.52755
+regime_predict|month=4: overnight -> NY corr,regime_predict,month=4: overnight -> NY corr,0.055766,0.5452,120,0.91719
+regime_predict|month=4: overnight -> NY sign edge,regime_predict,month=4: overnight -> NY sign edge,1.6052,0.10845,120,0.39807
+regime_predict|month=4: first hour -> rest corr,regime_predict,month=4: first hour -> rest corr,-0.0077769,0.93197,123,0.98419
+regime_predict|month=4: first hour -> rest sign edge,regime_predict,month=4: first hour -> rest sign edge,-0.25845,0.79606,123,0.98419
+regime_mean|month=4,regime_mean,month=4,2.1907,0.028473,125,0.16721
+regime_predict|month=5: overnight -> NY corr,regime_predict,month=5: overnight -> NY corr,0.12113,0.1802,124,0.58205
+regime_predict|month=5: overnight -> NY sign edge,regime_predict,month=5: overnight -> NY sign edge,-0.031012,0.97526,124,0.9844
+regime_predict|month=5: first hour -> rest corr,regime_predict,month=5: first hour -> rest corr,-0.10799,0.21953,131,0.6229
+regime_predict|month=5: first hour -> rest sign edge,regime_predict,month=5: first hour -> rest sign edge,-0.46214,0.64398,131,0.94302
+regime_mean|month=5,regime_mean,month=5,-0.78337,0.43341,132,0.84379
+lead_lag|09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+25m corr,lead_lag,09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+25m corr,-0.037058,0.22046,1095,0.6229
+lead_lag|09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+25m sign edge,lead_lag,09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+25m sign edge,-0.77461,0.43857,1095,0.84379
+lead_lag|09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+30m corr,lead_lag,09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+30m corr,-0.036045,0.23335,1095,0.6229
+lead_lag|09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+30m sign edge,lead_lag,09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+30m sign edge,-0.96332,0.33539,1095,0.77061
+lead_lag|09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+55m corr,lead_lag,09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+55m corr,-0.050604,0.09419,1095,0.35792
+lead_lag|09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+55m sign edge,lead_lag,09:00: CL0-CL1 spread 08:30-09:00 -> CL0 09:00+55m sign edge,-0.58343,0.55961,1095,0.92533
+lead_lag|14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+25m corr,lead_lag,14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+25m corr,-0.0037003,0.90715,996,0.98419
+lead_lag|14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+25m sign edge,lead_lag,14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+25m sign edge,-0.55685,0.57763,996,0.93756
+lead_lag|14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+30m corr,lead_lag,14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+30m corr,0.0065482,0.83803,977,0.98419
+lead_lag|14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+30m sign edge,lead_lag,14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+30m sign edge,-1.0178,0.30876,977,0.7333
+lead_lag|14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+55m corr,lead_lag,14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+55m corr,-0.0080722,0.80105,977,0.98419
+lead_lag|14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+55m sign edge,lead_lag,14:00: CL0-CL1 spread 13:30-14:00 -> CL0 14:00+55m sign edge,-1.2708,0.20379,977,0.60947
+lead_lag|EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+25m corr,lead_lag,EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+25m corr,0.03214,0.64814,204,0.94302
+lead_lag|EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+25m sign edge,lead_lag,EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+25m sign edge,-0.80653,0.41994,204,0.84379
+lead_lag|EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+30m corr,lead_lag,EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+30m corr,0.035736,0.61185,204,0.94302
+lead_lag|EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+30m sign edge,lead_lag,EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+30m sign edge,-0.79917,0.42419,204,0.84379
+lead_lag|EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+55m corr,lead_lag,EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+55m corr,0.036974,0.59956,204,0.94302
+lead_lag|EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+55m sign edge,lead_lag,EIA 10:30: CL0-CL1 spread 10:30-10:35 -> CL0 10:35+55m sign edge,-0.20666,0.83627,204,0.98419
+event_path|EIA 10:30: 10:35-10:40 corr,event_path,EIA 10:30: 10:35-10:40 corr,0.0020087,0.97259,295,0.9844
+event_path|EIA 10:30: 10:35-10:40 sign edge,event_path,EIA 10:30: 10:35-10:40 sign edge,-0.16047,0.87251,295,0.98419
+event_path|EIA 10:30: 10:35-10:45 corr,event_path,EIA 10:30: 10:35-10:45 corr,-0.031351,0.59174,295,0.94302
+event_path|EIA 10:30: 10:35-10:45 sign edge,event_path,EIA 10:30: 10:35-10:45 sign edge,-0.35036,0.72607,295,0.96197
+event_path|EIA 10:30: 10:35-10:50 corr,event_path,EIA 10:30: 10:35-10:50 corr,-0.0054265,0.92606,295,0.98419
+event_path|EIA 10:30: 10:35-10:50 sign edge,event_path,EIA 10:30: 10:35-10:50 sign edge,-0.065967,0.9474,295,0.98419
+event_path|EIA 10:30: 10:35-10:55 corr,event_path,EIA 10:30: 10:35-10:55 corr,-0.012439,0.83153,295,0.98419
+event_path|EIA 10:30: 10:35-10:55 sign edge,event_path,EIA 10:30: 10:35-10:55 sign edge,-0.29941,0.76463,295,0.969
+event_path|EIA 10:30: 10:35-11:00 corr,event_path,EIA 10:30: 10:35-11:00 corr,0.023898,0.68271,295,0.9432
+event_path|EIA 10:30: 10:35-11:00 sign edge,event_path,EIA 10:30: 10:35-11:00 sign edge,0.080699,0.93568,295,0.98419
+event_path|EIA 10:30: 10:35-11:05 corr,event_path,EIA 10:30: 10:35-11:05 corr,-0.0056699,0.92275,295,0.98419
+event_path|EIA 10:30: 10:35-11:05 sign edge,event_path,EIA 10:30: 10:35-11:05 sign edge,-0.44119,0.65908,295,0.9432
+event_path|EIA 10:30: 10:35-11:10 corr,event_path,EIA 10:30: 10:35-11:10 corr,-0.011292,0.84686,295,0.98419
+event_path|EIA 10:30: 10:35-11:10 sign edge,event_path,EIA 10:30: 10:35-11:10 sign edge,-0.6996,0.48418,295,0.85579
+event_path|EIA 10:30: 10:35-11:15 corr,event_path,EIA 10:30: 10:35-11:15 corr,-0.020434,0.7267,295,0.96197
+event_path|EIA 10:30: 10:35-11:15 sign edge,event_path,EIA 10:30: 10:35-11:15 sign edge,-0.87797,0.37996,295,0.82163
+event_path|EIA 10:30: 10:35-11:20 corr,event_path,EIA 10:30: 10:35-11:20 corr,0.0074649,0.89841,295,0.98419
+event_path|EIA 10:30: 10:35-11:20 sign edge,event_path,EIA 10:30: 10:35-11:20 sign edge,-0.58572,0.55807,295,0.92533
+event_path|EIA 10:30: 10:35-11:25 corr,event_path,EIA 10:30: 10:35-11:25 corr,0.0029243,0.96011,295,0.9844
+event_path|EIA 10:30: 10:35-11:25 sign edge,event_path,EIA 10:30: 10:35-11:25 sign edge,-0.76026,0.4471,295,0.84453
+event_path|EIA 10:30: 10:35-11:30 corr,event_path,EIA 10:30: 10:35-11:30 corr,0.02409,0.68029,295,0.9432
+event_path|EIA 10:30: 10:35-11:30 sign edge,event_path,EIA 10:30: 10:35-11:30 sign edge,-0.22092,0.82515,295,0.98419
+event_path|EIA 10:30: next day same 30m corr,event_path,EIA 10:30: next day same 30m corr,-0.090059,0.12274,295,0.43091
+event_path|EIA 10:30: next day same 30m sign edge,event_path,EIA 10:30: next day same 30m sign edge,-1.7388,0.082069,295,0.32266
+event_path|settlement 14:25: 14:30-14:35 corr,event_path,settlement 14:25: 14:30-14:35 corr,-0.079574,0.0015534,1579,0.02007
+event_path|settlement 14:25: 14:30-14:35 sign edge,event_path,settlement 14:25: 14:30-14:35 sign edge,-1.4549,0.14569,1579,0.49536
+event_path|settlement 14:25: 14:30-14:40 corr,event_path,settlement 14:25: 14:30-14:40 corr,-0.017481,0.4876,1579,0.85579
+event_path|settlement 14:25: 14:30-14:40 sign edge,event_path,settlement 14:25: 14:30-14:40 sign edge,0.53757,0.59087,1579,0.94302
+event_path|settlement 14:25: 14:30-14:45 corr,event_path,settlement 14:25: 14:30-14:45 corr,-0.016892,0.50238,1579,0.87242
+event_path|settlement 14:25: 14:30-14:45 sign edge,event_path,settlement 14:25: 14:30-14:45 sign edge,1.0875,0.27681,1579,0.67854
+event_path|settlement 14:25: 14:30-14:50 corr,event_path,settlement 14:25: 14:30-14:50 corr,0.02317,0.35753,1579,0.79644
+event_path|settlement 14:25: 14:30-14:50 sign edge,event_path,settlement 14:25: 14:30-14:50 sign edge,1.6456,0.099845,1579,0.375
+event_path|settlement 14:25: 14:30-14:55 corr,event_path,settlement 14:25: 14:30-14:55 corr,0.074292,0.0031383,1579,0.038854
+event_path|settlement 14:25: 14:30-14:55 sign edge,event_path,settlement 14:25: 14:30-14:55 sign edge,2.1954,0.028133,1579,0.16721
+event_path|settlement 14:25: 14:30-15:00 corr,event_path,settlement 14:25: 14:30-15:00 corr,0.055162,0.028388,1579,0.16721
+event_path|settlement 14:25: 14:30-15:00 sign edge,event_path,settlement 14:25: 14:30-15:00 sign edge,2.0223,0.043147,1579,0.21116
+event_path|settlement 14:25: 14:30-15:05 corr,event_path,settlement 14:25: 14:30-15:05 corr,0.047388,0.059756,1579,0.25953
+event_path|settlement 14:25: 14:30-15:05 sign edge,event_path,settlement 14:25: 14:30-15:05 sign edge,1.8941,0.058209,1579,0.25756
+event_path|settlement 14:25: 14:30-15:10 corr,event_path,settlement 14:25: 14:30-15:10 corr,0.034416,0.17165,1579,0.56004
+event_path|settlement 14:25: 14:30-15:10 sign edge,event_path,settlement 14:25: 14:30-15:10 sign edge,1.7362,0.082528,1579,0.32266
+event_path|settlement 14:25: 14:30-15:15 corr,event_path,settlement 14:25: 14:30-15:15 corr,0.058295,0.020527,1579,0.14414
+event_path|settlement 14:25: 14:30-15:15 sign edge,event_path,settlement 14:25: 14:30-15:15 sign edge,2.3553,0.018507,1579,0.13707
+event_path|settlement 14:25: 14:30-15:20 corr,event_path,settlement 14:25: 14:30-15:20 corr,0.062334,0.013234,1579,0.11553
+event_path|settlement 14:25: 14:30-15:20 sign edge,event_path,settlement 14:25: 14:30-15:20 sign edge,2.5761,0.0099929,1579,0.09222
+event_path|settlement 14:25: 14:30-15:25 corr,event_path,settlement 14:25: 14:30-15:25 corr,0.073369,0.0035335,1579,0.040761
+event_path|settlement 14:25: 14:30-15:25 sign edge,event_path,settlement 14:25: 14:30-15:25 sign edge,2.8405,0.0045041,1579,0.04597
+event_path|settlement 14:25: next day same 30m corr,event_path,settlement 14:25: next day same 30m corr,-0.012304,0.63071,1529,0.94302
+event_path|settlement 14:25: next day same 30m sign edge,event_path,settlement 14:25: next day same 30m sign edge,0.72334,0.46947,1529,0.85378
