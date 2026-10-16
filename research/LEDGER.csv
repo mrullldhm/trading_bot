@@ -1,0 +1,17 @@
+run_id,utc,item_id,kind,period,n_tests,statistic,value,p_value,verdict,prereg_sha256,code_sha256,data_sha256,output,note
+P001,2026-10-15T00:48:00Z,STRAT1-EMA-VWAP,prior,dev 2010-2021,6144,configs passing every gate,0,,FAIL,,,,data/backtests/ema_vwap/report.md,"v1 search; v2 re-run after audit fixes (12:40 UTC) also 0 of 6,144"
+P002,2026-10-15T00:56:51Z,STRAT1-EMA-VWAP,prior,holdout 2022+,4,champion holdout $/trade,-33,,FAIL,,,,data/backtests/ema_vwap/holdout.md,"PF 0.90; pass 16.2% / fail 77.6%; p95 drop $4,742"
+P003,2026-10-15T13:57:00Z,STRAT2-ORB,prior,dev 2010-2021,1056000,configs passing every gate,0,,FAIL,,,,data/backtests/orb/report.md,"1,039,730 unique streams; 55 effective trials; holdout frozen unopened"
+P004,2026-10-15,STRAT3-ZAB,prior,dev 2010-2021,3456,configs passing every gate,0,,FAIL,,,,data/backtests/zab/report.md,"3,121 unique streams; 26 effective trials; holdout frozen unopened"
+P005,2026-10-15,STRAT4-CRABEL,prior,dev 2010-2021,7200,configs passing every gate,0,,FAIL,,,,data/backtests/crabel/report.md,"6,810 unique streams; 32 effective trials; PBO 52.9%; holdout frozen unopened"
+P006,2026-10-15,STRAT5-ACD,prior,dev 2010-2021,2880,configs passing every gate,0,,FAIL,,,,data/backtests/acd/report.md,"2,878 unique streams; 9 effective trials"
+P007,2026-10-15T14:01:00Z,STRAT3-5-PROGRAMME,prior,dev 2010-2021,12809,PBO union of families,0.481,,FAIL,,,,data/backtests/orb_families_program.md,"no family champion passed every gate; 40 effective streams"
+P008,2026-10-15T16:24:00Z,AUDIT,prior,dev 2010-2021,5,strategies re-run under 4 assumption scenarios,0,,FAIL,,,,data/backtests/audit/report.md,"verdicts: EMA depends on assumptions; ORB/ZAB/ACD no edge after costs; Crabel depends on drawdown gate; planted edge found from ~$150/trade without G8, ~$300/trade with G8"
+P009,2026-10-15T16:53:00Z,STRAT5-ACD,prior,holdout 2022+,1,entry edge vs matched random entries at 60 min ($/trade),-27.12,0.847,EDGE NOT CONFIRMED,,71856e5704bc1b224599ecd0006ed151ded88dad83ffcf1653d78a9e33ead588,6ee90faab7846a36ea5cde62dd06dcdca59118bf7276ac9f9645464bc515cd53,data/backtests/acd/signal_holdout.md,"pre-registered 16:33:50 UTC; 575 signals; full strategy -$57.57/trade"
+P010,2026-10-15T17:44:00Z,STRAT6-VWAP-BREAK,prior,2010-06..2026-07 incl 2022+,17,published config $/trade,-40.18,,FAIL,,,,data/backtests/vwap_break/report.md,"published parameters + 16 neighbours; every year negative; PF 0.93 even at zero cost (2018-2026)"
+P011,2026-10-15T20:20:00Z,STRAT7-MOMENTUM,prior,dev 2010-2021,233280,configs passing every gate,0,,FAIL,,,,data/backtests/momentum/report.md,"96,063 unique streams; 71 effective trials; loses before costs"
+P012,2026-10-16T03:59:00Z,STRAT8-PINE-MOMENTUM,prior,dev 2010-2021,81000,configs passing every gate,0,,FAIL,,,,data/backtests/momentum2/report.md,"57,350 unique streams; 80 effective trials; loses before costs"
+PLAN-001,2026-10-16,S001,synthetic,none,60,Gaussian Combine Monte Carlo (no market data),,,PRELIMINARY,,,,research/REQUIREMENTS.md,"planning-stage feasibility preview: 24 cells 50K without DLL + 36 cells per account with DLL; 20,000 paths per cell; replaced by S001"
+S000-001,2026-10-16T15:10:33Z,S000,access,discovery,0,,,,,,,,,CL.v.0 rows=2227364 warmup_days=0: toolkit smoke test: load + one window
+S000-002,2026-10-16T15:20:11Z,S000,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: toolkit smoke test 2: roll/expiry rules after R003
+S000-003,2026-10-16T15:20:27Z,S000,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: toolkit smoke test 2: roll/expiry rules after R003
