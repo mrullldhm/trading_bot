@@ -125,7 +125,28 @@ p − 1.645·√(p(1−p)/2000) (`orb_search.py:208-209`).
 
 ## 7. Feasibility target zone
 
-**Preliminary** (rough Gaussian Monte Carlo run during planning, 2026-10-16; to be replaced by S001).
+### 7.1 S001 (real CL discovery noise with planted edges, DLL on; 2026-10-16)
+Source: [S001 report](studies/S001-feasibility/report.md), Codex replication R005. Edge = net ticks per
+trade after base costs; Sharpe = annual, after costs, on the day series (no-trade days included).
+
+| What you want | Cheapest S001 cell | Net ticks / trade | Annual Sharpe | IC per trade |
+|---|---|---|---|---|
+| pass >= 50%, fail <= 25% | 14:00-14:30, 150K x1 (or 50K x1 at 25% of days) | 4-8 | **1.6-1.7** | 0.17-0.27 |
+| same, stress costs | 09:00-10:00 25% / 14:00-14:30, 100-150K x1 | 6-12 | 1.6 | 0.22-0.28 |
+| pass >= 50%, UCB P(fail) <= 10%, $500 reserve (D006 option 2) | 03:00-08:00 25% / 14:00-14:30 50%, 150K x1 | 8-16 | 2.2-2.4 | 0.27-0.32 |
+| G8 and pass >= 50% (current gates) | 14:00-14:30 25%, 150K x1 | 16 | **3.1** | 0.44 |
+
+Rules of thumb:
+- **1 contract.** Every extra CL raises the needed edge; the MLL does not grow with size.
+- **100K / 150K** beat 50K for safety; 50K is quicker but fails more.
+- **Short, quiet windows** (14:00-14:30, 14:35-16:05, 10:35-11:30) need the fewest ticks; holding
+  09:00-16:05 needs 32+ ticks per trade.
+- **Zero edge** passes 12-19% of the time on 50K (luck floor).
+- G8 alone and the Codex fail-bound alone are both met by accounts that barely trade: see D006.
+
+### 7.2 Planning preview (superseded by 7.1)
+
+**Preliminary** (rough Gaussian Monte Carlo run during planning, 2026-10-16; replaced by S001).
 SR = annual after-cost Sharpe; sigma = daily P&L standard deviation at the chosen size. 20,000 paths,
 250 days, end-of-day trailing MLL, intraday low via a Brownian bridge, 55% consistency, DLL cap. Real CL
 P&L is fat-tailed, so reality is worse. For scale: one 60-minute trade on 1 CL has a standard deviation

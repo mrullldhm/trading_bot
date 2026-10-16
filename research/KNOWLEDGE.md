@@ -2,7 +2,7 @@
 id: KNOWLEDGE
 title: What we know about CL
 status: living
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # Knowledge base
@@ -51,7 +51,11 @@ Paths starting `data/backtests/` are local reports (not in git); `prior-work/STR
 | K3.3 | A planted ~$150/trade edge passed the simulated Combine 83% of the time (fail 14%) yet G8 rejected it (p95 $1,982). With every gate, an edge needs ~$300/trade on 1 CL | CONFIRMED (pipeline property) | audit positive control |
 | K3.4 | Trade MAE on 1 CL: median / p95 ORB $370 / $991, ACD $280 / $950, EMA $280 / $1,088 | EXPLORATORY | prior-work |
 | K3.5 | Micro contracts (MCL) did not rescue small edges: fees eat them (ACD $45 → $3-16 per trade at 1-5 MCL); 1 MCL never reaches the target within 250 days. MCL is now out of scope (D004) | CONFIRMED (cost arithmetic) | README lessons; audit |
-| K3.6 | Rough feasibility: every workable Combine setup needs an after-cost annual Sharpe of ~2-3+; with 1 CL, G8 passes only at low daily volatility on 100K/150K | EXPLORATORY (Gaussian model) | REQUIREMENTS §7; to be replaced by S001 |
+| K3.6 | Feasibility (S001, real CL discovery noise, planted edges, DLL on): pass >= 50% with fail <= 25% needs an after-cost annual Sharpe of **1.6-2.6 at the best size**, usually 3-7, and a per-trade IC of **0.17-0.3+**; adding G8 raises it to Sharpe **3.1+** (IC 0.43+) | CONFIRMED (Codex replication R005) | `studies/S001-feasibility/report.md` |
+| K3.7 | G8 alone, and the fail-bound rule alone, are met by accounts that barely trade: 8 of the 50 G8 cells pass < 20%; Part A 150K, SR 0.5, $75/day meets G8 and passes ~0% | CONFIRMED (R005) | S001 report §3-4; D006 |
+| K3.8 | More CL contracts always raise the edge needed (MLL fixed in $); 150K x1 needs the least edge per trade, 50K x1 is quickest but fails most | CONFIRMED (R005) | S001 report §2 |
+| K3.9 | Zero-edge 1 CL trade sd (2010-16): 14:35-16:05 22 ticks, 14:00-14:30 37, 09:00-10:00 49. Short quiet windows need 4-8 net ticks per trade; holding 09:00-16:05 needs 32+ | CONFIRMED (R005) | S001 report; R005 |
+| K3.10 | Zero edge after costs, 1 CL every day on 50K: pass 12-19%, fail 81-88% (the luck floor) | CONFIRMED (R005 cell 4: 16.5% vs 16.6%) | S001 report §1 |
 
 ## K4. Time of day and sessions
 

@@ -7,7 +7,8 @@ Conventions (PROTOCOL §4.6):
 - flat time per window = the earliest of 16:05 ET (12:55 ET on scheduled short days), 5 min before the
   contract expires, 5 min before the scheduled roll to the next contract (roll = the next contract's first
   front minute floored to the hour, as bars.py; known in advance). A fixed exit after the flat time makes
-  the window invalid; exit "FLAT" exits at the flat time; entries inside the last 5 minutes are invalid;
+  the window invalid; exit "FLAT" exits at the flat time; an entry at or after the flat time is invalid
+  (so no entry in the last 5 minutes before a roll or expiry);
 - unknown expiries of real contracts ("SYM@YYYY-MM") raise instead of trading through expiry;
 - MFE / MAE are measured on bars from the entry bar up to (not including) the exit bar.
 Returns are raw ticks: costs and direction are applied by the caller.
@@ -138,3 +139,61 @@ def trade_usd(w: pd.DataFrame, direction: np.ndarray, slip: float, fee: float, t
     mae = np.abs(d) * ((adverse + slip) * tick_usd + fee)
     flat = d == 0  # no trade: zero P&L and excursion by definition
     return np.where(flat, 0.0, pnl), np.where(flat, 0.0, mae)
+
+
+@njit(cache=False)
+def _drift_adverse(high, low, tmin, i0, i1, sign, drift):
+    """Per window: max of -(low') for longs, max of high' for shorts, on a path bent by a linear drift.
+
+    Price at bar j becomes p_j + sign*drift*f_j with f_j = (tmin_j - tmin_i0) / (tmin_i1 - tmin_i0), so the
+    drift is 0 at entry and `drift` ticks at the exit open. A bar's low/high gets the drift of the bar's
+    start minute: the least helpful point of the bar (conservative for drift >= 0)."""
+    n = len(i0)
+    out = np.full(n, np.nan)
+    for k in range(n):
+        if i0[k] < 0 or i1[k] <= i0[k]:
+            continue
+        span = tmin[i1[k]] - tmin[i0[k]]
+        worst = -1e18
+        for j in range(i0[k], i1[k]):
+            f = (tmin[j] - tmin[i0[k]]) / span
+            if sign[k] > 0:
+                a = -(low[j] + drift[k] * f)
+            else:
+                a = high[j] - drift[k] * f
+            if a > worst:
+                worst = a
+        out[k] = worst  # long: -min(low'), short: max(high')
+    return out
+
+
+def planted(df: pd.DataFrame, w: pd.DataFrame, direction: np.ndarray, drift_ticks, slip: float, fee: float,
+            tick_usd: float = 10.0) -> tuple[np.ndarray, np.ndarray]:
+    """Like `trade_usd`, with a planted edge bent into the price path (R002 #2).
+
+    The trade's path moves `drift_ticks` (scalar or per window) in the trade's direction, linearly from the
+    entry open (0) to the exit open (full drift), so exit, MAE, DLL and MLL all see the same deformed path.
+    df: the frame the windows came from. drift_ticks = 0 gives exactly `trade_usd`."""
+    d = np.asarray(direction, float)
+    valid = w["valid"].to_numpy()
+    if ((d != 0) & ~valid).any():
+        raise ValueError("a non-zero direction targets an invalid window: filter on `valid` first")
+    g = np.broadcast_to(np.asarray(drift_ticks, float), d.shape).copy()
+    tmin = df["tmin"].to_numpy()
+    trade = (d != 0) & valid
+    i0 = np.where(trade, np.searchsorted(tmin, w["entry_tmin"].to_numpy()), -1)
+    i1 = np.where(trade, np.searchsorted(tmin, w["exit_tmin"].to_numpy()), -1)
+    adv = _drift_adverse(df["high"].to_numpy(float), df["low"].to_numpy(float), tmin.astype(np.int64),
+                         i0.astype(np.int64), i1.astype(np.int64), np.sign(d), g)
+    entry = w["entry"].to_numpy()
+    adverse = np.where(d > 0, adv + entry, adv - entry)  # long: entry - min(low'); short: max(high') - entry
+    pnl = (d * w["ret_ticks"].to_numpy() + np.abs(d) * g) * tick_usd - np.abs(d) * (fee + 2 * slip * tick_usd)
+    mae = np.abs(d) * ((adverse + slip) * tick_usd + fee)
+    flat = ~trade
+    return np.where(flat, 0.0, pnl), np.where(flat, 0.0, mae)
+
+
+def one_trade_day_low(pnl: np.ndarray, mae: np.ndarray) -> np.ndarray:
+    """Intraday low ($, <= 0) of a day with one trade: the worst of the pre-exit excursion and the result
+    itself (the exit price is on the path too: R004 #1, as propsim's min(day_low, day_pnl))."""
+    return np.minimum(np.minimum(-np.asarray(mae, float), np.asarray(pnl, float)), 0.0)

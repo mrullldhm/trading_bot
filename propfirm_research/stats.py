@@ -3,6 +3,7 @@
 Large-sample normal approximations: fine for hundreds of day clusters, not for tiny samples.
 """
 
+import functools
 import math
 from statistics import NormalDist
 
@@ -101,3 +102,39 @@ def variance_ratio(r: np.ndarray, q: int) -> dict:
         theta += (2 * (q - j) / q) ** 2 * delta
     z = (vr - 1) / math.sqrt(theta) if theta > 0 else np.nan
     return {"vr": float(vr), "z": float(z), "n": n}
+
+
+@functools.lru_cache(maxsize=256)
+def t_quantile(p: float, df: int) -> float:
+    """Student-t quantile (no scipy): bisection on a Simpson-integrated CDF. Accurate to ~1e-6."""
+    if not 0 < p < 1 or df < 1:
+        raise ValueError("need 0 < p < 1 and df >= 1")
+    if p < 0.5:
+        return -t_quantile(1 - p, df)
+    c = math.exp(math.lgamma((df + 1) / 2) - math.lgamma(df / 2)) / math.sqrt(df * math.pi)
+
+    def cdf(x: float) -> float:  # x >= 0
+        m = 2000
+        h = x / m
+        s = 0.0
+        for i in range(m + 1):
+            w = 1 if i in (0, m) else (4 if i % 2 else 2)
+            s += w * (1 + (i * h) ** 2 / df) ** (-(df + 1) / 2)
+        return 0.5 + c * s * h / 3
+
+    lo, hi = 0.0, 1.0
+    while cdf(hi) < p:
+        hi *= 2
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if cdf(mid) < p else (lo, mid)
+    return (lo + hi) / 2
+
+
+def mean_upper(x, conf: float = 0.95) -> float:
+    """One-sided upper confidence bound of a mean from independent units (t interval)."""
+    x = np.asarray(x, float)
+    n = len(x)
+    if n < 2:
+        return float("nan")
+    return float(x.mean() + t_quantile(conf, n - 1) * x.std(ddof=1) / math.sqrt(n))

@@ -159,3 +159,106 @@ def test_trade_usd_costs_and_mae():
     with pytest.raises(ValueError):
         grid.trade_usd(bad, np.array([1]), slip=1.0, fee=4.02)
     assert grid.trade_usd(bad, np.array([0]), slip=1.0, fee=4.02)[0][0] == 0.0
+
+
+# --- planted edges (S001) ---------------------------------------------------------------------
+
+def test_planted_zero_drift_equals_trade_usd():
+    df = minutes()
+    w = grid.windows(df, [(9 * 60, 10 * 60), (9 * 60, grid.FLAT)], expiry_tmin=EXP)
+    for d in (np.array([1, -1]), np.array([-1, 0])):
+        got = grid.planted(df, w, d, 0.0, slip=1.0, fee=4.02)
+        ref = grid.trade_usd(w, d, slip=1.0, fee=4.02)
+        assert np.allclose(got[0], ref[0]) and np.allclose(got[1], ref[1])
+
+
+def test_planted_drift_bends_path_and_exit():
+    df = minutes()  # open = 5000 + i, low = open - 3, high = open + 2: a steady rise of 1 tick/min
+    w = grid.windows(df, [(9 * 60, 10 * 60)], expiry_tmin=EXP)  # 60 minutes, entry open 5005
+    pnl, mae = grid.planted(df, w, np.array([1]), 30.0, slip=1.0, fee=4.02)
+    assert pnl[0] == pytest.approx((60 + 30) * 10 - 24.02)
+    assert mae[0] == pytest.approx((3 + 1) * 10 + 4.02)  # rising path: worst point is still the entry bar
+    # short against a +1/min trend: path p_j - 0.5*j, worst high at the last bar before exit (j = 59)
+    pnl_s, mae_s = grid.planted(df, w, np.array([-1]), 30.0, slip=1.0, fee=4.02)
+    assert pnl_s[0] == pytest.approx((-60 + 30) * 10 - 24.02)
+    assert mae_s[0] == pytest.approx((59 + 2 - 30 * 59 / 60 + 1) * 10 + 4.02)
+
+
+def test_planted_drift_lowers_short_mae_in_flat_market():
+    df = minutes()
+    df[["open", "high", "low", "close"]] = df[["open", "high", "low", "close"]].to_numpy() * 0 + [5000, 5002, 4997, 5000]
+    w = grid.windows(df, [(9 * 60, 10 * 60)], expiry_tmin=EXP)
+    for d in (1, -1):  # symmetric: in a flat market the drift helps both directions equally
+        pnl, mae = grid.planted(df, w, np.array([d]), 12.0, slip=1.0, fee=4.02)
+        assert pnl[0] == pytest.approx(12 * 10 - 24.02)
+    assert grid.planted(df, w, np.array([1]), 12.0, 1.0, 4.02)[1][0] == pytest.approx((3 + 1) * 10 + 4.02)
+    assert grid.planted(df, w, np.array([-1]), 12.0, 1.0, 4.02)[1][0] == pytest.approx((2 + 1) * 10 + 4.02)
+    bad = grid.windows(df, [(15 * 60, 16 * 60 + 10)], expiry_tmin=EXP)
+    with pytest.raises(ValueError):
+        grid.planted(df, bad, np.array([1]), 5.0, 1.0, 4.02)
+
+
+def test_odds_many_equals_odds_per_row():
+    rows = [series(s, mu=30, sd=250) for s in (11, 12, 13)]
+    pnl = np.vstack([r[0] for r in rows])
+    low = np.vstack([r[1] for r in rows])
+    many = combine.odds_many(pnl, low, "100K", contracts=2, reserve=500, n_sims=300, seeds=[1, 2, 3])
+    for i in range(3):
+        one = combine.odds(pnl[i], low[i], "100K", contracts=2, reserve=500, n_sims=300, seed=i + 1)
+        assert (many["pass"][i], many["fail"][i]) == pytest.approx((one["pass"], one["fail"]))
+        assert many["p95_dd"][i] == pytest.approx(one["p95_dd"])
+        assert many["fail_ucb95"][i] == pytest.approx(one["fail_ucb95"])
+        assert many["dll_hit_days"][i] == pytest.approx(one["dll_hit_days"])
+    with pytest.raises(ValueError):
+        combine.odds_many(pnl, -low, "50K", n_sims=10)
+
+
+# --- R004 fixes -------------------------------------------------------------------------------
+
+def test_day_low_includes_exit_when_exit_is_worst_price():
+    df = minutes()
+    df.loc[df["mod"] == 10 * 60, "open"] = 5005 - 150.0  # benign path, exit open gaps 150 ticks down
+    w = grid.windows(df, [(9 * 60, 10 * 60)], expiry_tmin=EXP)
+    pnl, mae = grid.planted(df, w, np.array([1]), 0.0, slip=1.0, fee=4.02)
+    assert mae[0] == pytest.approx((3 + 1) * 10 + 4.02)  # pre-exit excursion is small
+    low = grid.one_trade_day_low(pnl, mae)
+    assert low[0] == pytest.approx(pnl[0]) and pnl[0] < -1000  # so the DLL sees the loss that day
+    capped = combine.apply_dll(pnl, low, 1000.0, 10.0)[0]
+    assert capped[0] == pytest.approx(-1010.0)
+    with pytest.raises(ValueError):  # a low above the close is now rejected
+        combine.odds(pnl, -mae, "50K", n_sims=10)
+
+
+def test_account_level_drop_stops_at_mll_line():
+    pnl = np.array([-1500.0, -100.0])
+    low = np.array([-1500.0, -1200.0])  # day 2 dips far below the 50K MLL line (-2000)
+    o = combine.odds(pnl, low, "50K", dll=False, n_sims=50)
+    assert o["fail"] == 1.0
+    assert o["p95_dd_account"] <= 2000.0 + 1e-9 < o["p95_dd"]
+
+
+def test_odds_many_checks_seeds_and_sims():
+    pnl, low = series(3)
+    with pytest.raises(ValueError):
+        combine.odds_many(np.vstack([pnl, pnl]), np.vstack([low, low]), "50K", seeds=[1])
+    with pytest.raises(ValueError):
+        combine.odds_many(pnl, low, "50K", seeds=[1.5])
+    with pytest.raises(ValueError):
+        combine.odds_many(pnl, low, "50K", n_sims=0)
+
+
+def test_t_quantile_matches_tables():
+    from propfirm_research.stats import mean_upper, t_quantile
+    assert t_quantile(0.95, 9) == pytest.approx(1.833113, abs=1e-5)
+    assert t_quantile(0.975, 4) == pytest.approx(2.776445, abs=1e-5)
+    assert t_quantile(0.05, 9) == pytest.approx(-1.833113, abs=1e-5)
+    x = np.array([0.0, 0.01, 0.02, 0.0, 0.01])
+    assert mean_upper(x) == pytest.approx(x.mean() + 2.131847 * x.std(ddof=1) / np.sqrt(5), abs=1e-6)
+
+
+def test_odds_many_rejects_shape_mismatch_without_dll():
+    pnl, low = series(4)
+    with pytest.raises(ValueError):
+        combine.odds_many(np.vstack([pnl, pnl]), low[None], "50K", dll=False, n_sims=10)
+    with pytest.raises(ValueError):
+        combine.odds(pnl, low, "50K", n_sims=0)

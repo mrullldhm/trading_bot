@@ -2,7 +2,7 @@
 id: BACKLOG
 title: Hypothesis backlog
 status: living
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # Hypothesis backlog
@@ -16,6 +16,11 @@ Prior: **A** = direct literature support on crude oil or futures intraday; **B**
 indirect support; **C** = weak prior or cost-heavy. Source: who proposed it (Claude, Codex, both) and
 the paper. Every first test uses discovery data only and CL costs (base $24.02, stress $44.02 per round
 trip).
+
+**S001 bar (2026-10-16, validated R005):** an idea is worth a pre-registration only if its discovery
+estimate, after base costs and before any haircut, is about **IC >= 0.2 per trade / annual Sharpe >= 2 at
+1 CL** on its own window. Ideas on short quiet windows (14:00-14:30, 14:35-16:05, 10:35-11:30) start
+cheapest (4-8 net ticks per trade); full-session holds (09:00-16:05) need 32+ ticks and drop in priority.
 
 | ID | Hypothesis | Mechanism (why someone loses money to us) | Source | Prior | First test (discovery) | Status |
 |---|---|---|---|---|---|---|
