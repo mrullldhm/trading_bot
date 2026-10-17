@@ -93,6 +93,9 @@ Paths starting `data/backtests/` are local reports (not in git); `prior-work/STR
 | K6.4 | Champions earned mostly early: ORB 2010-13 +$17,786 vs 2014-21 −$3,294; ZAB 2010-15 +$12,657 vs 2016-21 +$2,076; Crabel's entry edge exists only in 2010-15 (z 3.2-3.5). Edges decay after ~2015 | EXPLORATORY (consistent pattern) | prior-work; audit |
 | K6.5 | A tuned 2.5-month backtest says nothing: VWAP Break claimed +$40,878 (PF 1.81) on its own window, lost $40/trade over 16 years, every year negative | CONFIRMED | `data/backtests/vwap_break/report.md` |
 | K6.6 | Walk-forward (pick each year from earlier years only) never found a qualifying config for any of strategies 1-8 | CONFIRMED | all reports |
+| K6.7 | **Ceiling (S003)**: ridge / elastic net / boosted trees on ~25 causal OHLCV, range, VWAP, term-structure and calendar features at 8 decision times x 6 horizons: 0 of 432 strategies significant after costs (Romano-Wolf min p 0.96; SPA p 0.87); null controls clean | CONFIRMED (discovery OOS 2012-16, R011) | S003 report |
+| K6.8 | Power of 5 out-of-sample years: a planted 8-net-tick edge is found 90% of the time (74-97%), 4 ticks 15%, 1-2 ticks never. Absence of evidence here rules out ~8+ tick edges only; the Combine bar on short windows is 4-8 ticks | CONFIRMED (R011: 10 of 10 at 8 ticks) | S003 report |
+| K6.9 | Long holds cannot be bounded: simultaneous 95% upper bounds of gross edge per trade reach 11-20 ticks for holds to 16:05 from 03:00 / 08:00 / 09:00 / 20:00; tight bounds only on short quiet windows (e.g. 10:35 +5, 14:00 +15 below the stress cost for every model) | CONFIRMED (R011) | S003 report |
 
 ## K7. Outside evidence (literature priors, not tested here yet)
 

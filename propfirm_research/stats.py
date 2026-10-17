@@ -191,3 +191,97 @@ def mean_upper(x, conf: float = 0.95) -> float:
     if n < 2:
         return float("nan")
     return float(x.mean() + t_quantile(conf, n - 1) * x.std(ddof=1) / math.sqrt(n))
+
+
+def stationary_bootstrap_indices(n: int, mean_block: float, rng) -> np.ndarray:
+    """Politis-Romano stationary bootstrap: blocks of geometric length (mean `mean_block`) that wrap around."""
+    if n < 1 or mean_block < 1:
+        raise ValueError("need n >= 1 and mean_block >= 1")
+    p = 1.0 / mean_block
+    idx = np.empty(n, np.int64)
+    idx[0] = rng.integers(n)
+    new = rng.random(n) < p
+    starts = rng.integers(0, n, n)
+    for t in range(1, n):
+        idx[t] = starts[t] if new[t] else (idx[t - 1] + 1) % n
+    return idx
+
+
+def _boot_means(x: np.ndarray, n_boot: int, mean_block: float, seed: int) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    n = len(x)
+    return np.stack([x[stationary_bootstrap_indices(n, mean_block, rng)].mean(axis=0) for _ in range(n_boot)])
+
+
+def romano_wolf(x: np.ndarray, n_boot: int = 1000, mean_block: float = 5.0, seed: int = 0) -> dict:
+    """Romano-Wolf step-down max-t for H0_k: mean_k <= 0 against mean_k > 0, k = columns of x (rows = days,
+    in time order; a day without a trade is 0). Stationary bootstrap of whole rows keeps the dependence
+    between cells and over time. Returns per-column t and family-wise adjusted p-values."""
+    x = np.asarray(x, float)
+    if x.ndim != 2 or len(x) < 10 or not np.isfinite(x).all():
+        raise ValueError("x must be a finite 2-D array with >= 10 rows")
+    n, k = x.shape
+    mean, sd = x.mean(axis=0), x.std(axis=0, ddof=1)
+    se = np.where(sd > 0, sd / math.sqrt(n), np.inf)
+    t = mean / se
+    bm = _boot_means(x, n_boot, mean_block, seed)
+    tb = (bm - mean) / se  # centred bootstrap t (null imposed)
+    order = np.argsort(-t)
+    p_adj = np.empty(k)
+    prev = 0.0
+    for j, col in enumerate(order):
+        rest = order[j:]
+        mx = tb[:, rest].max(axis=1)
+        p = float(((mx >= t[col]).sum() + 1) / (n_boot + 1))  # never exactly 0
+        prev = max(prev, p)  # step-down monotonicity
+        p_adj[col] = prev
+    return {"t": t, "p_adj": p_adj, "mean": mean, "se": se}
+
+
+def spa_test(x: np.ndarray, n_boot: int = 1000, mean_block: float = 5.0, seed: int = 0) -> dict:
+    """Hansen (2005) SPA test (consistent version) of H0: no column beats 0 (benchmark = flat). x as in
+    romano_wolf: per-day excess P&L of each candidate. Small p = the best candidate is real."""
+    x = np.asarray(x, float)
+    if x.ndim != 2 or len(x) < 10 or not np.isfinite(x).all():
+        raise ValueError("x must be a finite 2-D array with >= 10 rows")
+    n, k = x.shape
+    mean = x.mean(axis=0)
+    sd = x.std(axis=0, ddof=1)
+    se = np.where(sd > 0, sd / math.sqrt(n), np.inf)
+    stat = max(0.0, float((mean / se).max()))
+    keep = mean >= -se * math.sqrt(2 * math.log(math.log(n)))  # recentre only plausible nulls
+    mu_c = np.where(keep, mean, 0.0)
+    bm = _boot_means(x, n_boot, mean_block, seed)
+    tb = np.maximum(0.0, ((bm - mu_c) / se).max(axis=1))  # Hansen: d* - g_c(mean)
+    return {"stat": stat, "p": float(((tb >= stat).sum() + 1) / (n_boot + 1)), "best": int(np.argmax(mean / se))}
+
+
+def simultaneous_upper(gross: np.ndarray, trade: np.ndarray, conf: float = 0.95, n_boot: int = 2000,
+                       mean_block: float = 5.0, seed: int = 0) -> dict:
+    """Simultaneous one-sided upper confidence bounds of the gross edge per trade of K strategies.
+    gross, trade: days x K (gross P&L of the day, 0 without a trade; trade flag). Estimand per column:
+    sum(gross) / sum(trades). Stationary bootstrap of whole days; bound_k = est_k + c * se_k with c the
+    `conf` quantile of max_k (est_k - est*_k) / se_k, so all K bounds hold together with prob. `conf`."""
+    g = np.asarray(gross, float)
+    tr = np.asarray(trade, bool).astype(float)
+    if g.shape != tr.shape or g.ndim != 2 or len(g) < 10:
+        raise ValueError("gross and trade must be the same 2-D shape with >= 10 rows")
+    n_tr = tr.sum(axis=0)
+    has = n_tr > 0
+    est = np.where(has, g.sum(axis=0) / np.where(has, n_tr, 1), np.nan)
+    rng = np.random.default_rng(seed)
+    boots = np.empty((n_boot, g.shape[1]))
+    for b in range(n_boot):
+        i = stationary_bootstrap_indices(len(g), mean_block, rng)
+        nb = tr[i].sum(axis=0)
+        boots[b] = np.where(nb > 0, g[i].sum(axis=0) / np.where(nb > 0, nb, 1), np.nan)
+    se = np.nanstd(boots, axis=0, ddof=1)
+    ok = has & (se > 0)
+    if not ok.any():
+        raise ValueError("no strategy with trades and bootstrap variation")
+    dev = (est[ok] - boots[:, ok]) / se[ok]
+    row_max = np.where(np.isnan(dev).all(axis=1), np.nan, np.nanmax(np.where(np.isnan(dev), -np.inf, dev), axis=1))
+    c = float(np.nanquantile(row_max, conf))
+    upper = np.full(g.shape[1], np.nan)
+    upper[ok] = est[ok] + c * se[ok]
+    return {"est": est, "se": se, "upper": upper, "c": c}

@@ -67,6 +67,16 @@ bar = S001 (IC ~0.2, ~4-8 net ticks on short windows).
 | 4 | H009, short-horizon fades | VR < 1 is bid-ask bounce | demoted |
 | - | H007, H008, H010, H011, H013-H016, H021, H023, H024 | not measured by the atlas | unchanged; S003 (ceiling) decides which decision times are worth them |
 
+## After S003 (2026-10-17)
+The ceiling found nothing in OHLCV-derived features at 8 decision times and can only rule out ~8+ net
+tick edges (K6.7-K6.9). Consequences for every card:
+- an idea built only from OHLCV / range / VWAP / term-structure / calendar features at these times starts
+  with a **low prior** (the ceiling already searched that space for 8+ tick edges);
+- a 4-8 tick idea needs validation power planning: with ~250 trades/year, 2017-2021 adds ~1,250 trades;
+  write the minimum detectable edge into each pre-registration;
+- ideas with information outside the ceiling's features (settlement-flow structure H025 / H026, event
+  content, other markets, order flow) are the ones worth a card.
+
 ## Parked / rejected
 None yet. Strategies 1-8 are in `prior-work/STRATEGIES-1-8.md`; do not re-test them in another costume.
 

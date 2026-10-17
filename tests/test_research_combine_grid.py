@@ -262,3 +262,17 @@ def test_odds_many_rejects_shape_mismatch_without_dll():
         combine.odds_many(np.vstack([pnl, pnl]), low[None], "50K", dll=False, n_sims=10)
     with pytest.raises(ValueError):
         combine.odds(pnl, low, "50K", n_sims=0)
+
+
+def test_gate_g8_d006_rule():
+    good_pnl, good_low = series(21, n=600, mu=60.0, sd=150.0)
+    g = combine.gate_g8(good_pnl, good_low, "100K", n_sims=1000, n_outer=10, outer_sims=300)
+    assert g["g8_rule"] == "D006" and g["reserve"] == 500.0 and g["dll"]
+    assert g["fail_ucb95_gate"] >= g["fail_ucb95"]  # outer resamples can only widen the bound
+    assert g["g8_ok"] == (g["pass"] >= 0.5 and g["fail_ucb95_gate"] <= 0.10)
+    assert g["g8_ok"]  # a strong edge passes
+    idle_pnl, idle_low = np.full(600, 1.0), np.full(600, -5.0)  # barely trades: never fails, never passes
+    idle = combine.gate_g8(idle_pnl, idle_low, "150K", n_sims=500, n_outer=5, outer_sims=200)
+    assert idle["fail"] == 0 and not idle["g8_ok"]  # D006: inactivity no longer passes G8
+    diag = combine.gate_g8(good_pnl, good_low, "100K", n_sims=500, n_outer=0)
+    assert not diag["g8_ok"]  # without outer draws the result is diagnostic only

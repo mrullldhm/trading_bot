@@ -1,15 +1,16 @@
 ---
 id: D006
-title: Proposal - replace G8 alone with a Combine-odds gate (pass floor + fail bound)
-status: proposed
-decided:
-approver: owner (pending)
+title: G8 replaced by a Combine-odds gate (pass floor + fail bound), option 2
+status: decided
+decided: 2026-10-17
+approver: owner
 updated: 2026-10-17
 ---
 
-# D006 — Proposal: recalibrate G8 (D003 step 3)
+# D006 — G8 recalibrated (D003 step 3)
 
-**Nothing changes until the owner approves this file.** Until then G8 stays as in D003.
+**Decided 2026-10-17: option 2** (owner: "proceed with option 2"). Supersedes D003 point 2 (G8 at 50%
+of the MLL); D003's other points stand.
 
 ## Context
 D003 kept G8 (p95 of the worst drop in the first 60 days <= 50% of the account's MLL) and asked for a
@@ -54,12 +55,16 @@ independent outer draws (R004 #2). p95 / p99 60-day drops stay **reported** (not
 - Option 2 keeps the bar high (Sharpe ~2.2+, IC ~0.3 per trade): it does not make passing easy, it stops
   rejecting strategies for being active.
 
-## What would change if approved
+## What changes
 - REQUIREMENTS G8 row: replaced by the option-2 rule; p95 / p99 drops still reported.
 - `propfirm_research.combine` already reports everything needed (`pass`, `fail`, `fail_ucb95`,
-  account-level and propsim-style drops); a helper `gate_g8v2` would be added with tests.
+  account-level and propsim-style drops); `gate_g8` applies the rule (tests included).
 - The frozen propsim / old gate code is not touched; old results stay judged by the old rule.
 
 ## Owner decision
-- [ ] Option 0 / 1 / 2 / 3 / other: ______
-- Date:
+- [x] **Option 2**, 2026-10-17.
+
+## Implementation
+- `propfirm_research.combine.gate_g8` (constants `G8_PASS_MIN` 0.50, `G8_FAIL_UCB_MAX` 0.10,
+  `G8_RESERVE` $500), test `test_gate_g8_d006_rule` (a strong edge passes; an idle account fails).
+- REQUIREMENTS §3 G8 row rewritten; the old rule stays documented there for strategies 1-8.

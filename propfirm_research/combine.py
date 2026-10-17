@@ -16,7 +16,7 @@ from dataclasses import dataclass
 import numpy as np
 from numba import njit, prange
 
-from .stats import wilson_upper
+from .stats import mean_upper, stationary_bootstrap_indices, wilson_upper
 
 MAX_DAYS = 250
 DD_WINDOW = 60
@@ -205,3 +205,33 @@ def odds_many(day_pnl2d: np.ndarray, day_low2d: np.ndarray, account: Account | s
             "p95_dd": r[:, 2], "p99_dd": r[:, 3], "g8_ok": r[:, 2] <= acc.g8_limit,
             "median_days_pass": r[:, 4], "dll_hit_days": hit,
             "p95_dd_account": r[:, 5], "p99_dd_account": r[:, 6]}
+
+
+G8_PASS_MIN = 0.50  # D006 option 2 (owner, 2026-10-17)
+G8_FAIL_UCB_MAX = 0.10
+G8_RESERVE = 500.0
+
+
+def gate_g8(day_pnl_stress: np.ndarray, day_low_stress: np.ndarray, account: Account | str = "50K",
+            contracts: int = 1, n_sims: int = 2000, seed: int = 12345, n_outer: int = 20,
+            outer_sims: int = 500, mean_block: float = 20.0) -> dict:
+    """G8 as decided in D006: on the STRESS-cost daily series, with a $500 reserve and the DLL on,
+    pass >= 50% and the upper 95% bound of P(fail) <= 10%. The bound is the larger of the Wilson bound over
+    the attempts and a one-sided t bound over `n_outer` stationary-bootstrap resamples of the strategy's own
+    day series (R010 #9: a lucky history must not pass on the Combine simulation's error alone).
+    n_outer = 0 gives a diagnostic result that can never pass. Drawdowns are reported, not gated."""
+    pnl = np.asarray(day_pnl_stress, float)
+    low = np.asarray(day_low_stress, float)
+    o = odds(pnl, low, account, contracts, dll=True, reserve=G8_RESERVE, n_sims=n_sims, seed=seed)
+    rng = np.random.default_rng(seed)
+    outer = []
+    for k in range(n_outer):
+        i = stationary_bootstrap_indices(len(pnl), mean_block, rng)
+        outer.append(odds(pnl[i], low[i], account, contracts, dll=True, reserve=G8_RESERVE, n_sims=outer_sims,
+                          seed=seed + 1 + k)["fail"])
+    ucb = max(o["fail_ucb95"], mean_upper(outer)) if n_outer >= 2 else float("nan")
+    o.update(fail_ucb95_gate=ucb, outer_fail_mean=float(np.mean(outer)) if outer else float("nan"),
+             n_outer=n_outer, g8_pass_ok=o["pass"] >= G8_PASS_MIN, g8_fail_ok=bool(ucb <= G8_FAIL_UCB_MAX))
+    o["g8_ok"] = bool(n_outer >= 2 and o["g8_pass_ok"] and o["g8_fail_ok"])
+    o["g8_rule"] = "D006"
+    return o

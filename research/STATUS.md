@@ -7,16 +7,16 @@ updated: 2026-10-17
 
 # Status
 
-**Last updated:** 2026-10-17, session 2 ([journal/2026-10-16-02.md](journal/2026-10-16-02.md), [journal/2026-10-17-01.md](journal/2026-10-17-01.md))
+**Last updated:** 2026-10-17, session 2 ([journal/2026-10-16-02.md](journal/2026-10-16-02.md), [journal/2026-10-17-01.md](journal/2026-10-17-01.md), [journal/2026-10-17-02.md](journal/2026-10-17-02.md))
 
 | | |
 |---|---|
-| Phase | **C — Atlas: done.** S001 VALIDATED (R004, R005); S002 VALIDATED (R007 review, R008 re-check, R009 replication 5/5) |
-| Active item | **S003 ceiling** (next; needs the owner's scikit-learn approval) |
-| Waiting on owner | **D006** (G8 proposal, recommended option 2) and **scikit-learn** approval for S003 |
+| Phase | **D — Ceiling: done.** S001, S002, S003 all VALIDATED by Codex (S003: R010 review, R011 replication) |
+| Active item | **Owner decision on direction** (phase E, see Next actions) |
+| Waiting on owner | (1) direction after S003; (2) flat-exit convention (R011): strict 16:05 bar before validation runs |
 | Validation families used | 0 / 25 |
 | Programme holdout looks | 0 / 1 (2022+ unopened for this programme) |
-| Tests | 383 passed (research 74, rest 309; hashed modules untouched) |
+| Tests | 397 passed (research 88, rest 309; hashed modules untouched) |
 
 ## Toolkit (`propfirm_research/`)
 | Module | State |
@@ -27,20 +27,27 @@ updated: 2026-10-17
 | `data` (only reader of bars; firewall; access logging) | done; real-data smoke test OK (2.2M discovery minutes in 17 s) |
 | `costs` (CL $24.02 / $44.02) | done |
 | `combine` (50K/100K/150K, DLL with liquidation slip, G8 at 50% MLL; equals propsim at 50K/no DLL; `odds_many` batched, account-level drop) | done |
-| `stats` (clustered t, Newey-West, BH, Wilson, MDE, variance ratio (fixed R007) + day-clustered VR, t quantile / p) | done; Romano-Wolf / SPA / stationary bootstrap still to add (needed by S003 and validation) |
+| `stats` (clustered t, Newey-West, BH, Wilson, MDE, variance ratio + day-clustered VR, t quantile / p, stationary bootstrap, Romano-Wolf, SPA, simultaneous upper bounds) | done |
 | `grid` (decision-time windows, flat 16:05, roll-safe, MFE/MAE, planted path drift) | done |
 | `studies/s001_feasibility` | done (9 min run) |
 | `studies/s002_atlas` | done (~70 s run) |
+| `studies/s003_ceiling` | done (14 min run; scikit-learn 1.9.1, D007) |
+| `combine.gate_g8` | G8 per D006 (pass >= 50%, UCB P(fail) <= 10%, stress costs, $500 reserve, outer resamples) |
 | `index` (rebuild INDEX.md) | done |
 
 ## Next actions (in order)
-1. **Owner:** decide D006 (G8); approve or refuse scikit-learn for S003.
-2. Add Romano-Wolf / SPA / stationary bootstrap to `stats` (no approval needed).
-3. **S003** ceiling (which decision times hold any predictability), Codex review + replication.
-4. Then phase E: first hypothesis card from the post-S002 ranking (BACKLOG): H025 settlement
-   continuation (conditioned) is the only idea with a measured base; it is decaying, so low prior.
-5. Before the first validation run: decision record with the frozen portfolio-building rule (PROTOCOL §2).
-6. Deferred minors (efficiency only): fold `odds` into `odds_many`; hoist repeated work in `grid.planted`.
+1. **Owner: choose the direction** (Claude's recommendation first):
+   a. **Phase E on structural ideas only**: H025 settlement continuation (conditioned) and H026, each
+      pre-registered with a power plan (validation 2017-2021); low prior, cheap.
+   b. **New information**: data the ceiling did not have (e.g. CME settlement / TAS volume, options
+      open interest, EIA consensus surprises, other markets such as Brent / RBOB / HO). Data purchases
+      need owner approval.
+   c. Pause CL intraday research (the measured evidence says the easy edges are not there).
+2. **Owner: flat-exit convention** (R011 open item): adopt the strict 16:05 bar in `grid` before any
+   validation run (recommended).
+3. Before the first validation run: decision record with the frozen portfolio-building rule (PROTOCOL §2).
+4. Deferred minors (efficiency only): fold `odds` into `odds_many`; hoist repeated work in `grid.planted`;
+   vectorise `stationary_bootstrap_indices`; cache strategies in S003.
 
 ## Phase map
 | Phase | Status |
@@ -48,8 +55,8 @@ updated: 2026-10-17
 | A Setup | done |
 | B Feasibility (S001) | done (validated) |
 | C Atlas (S002) | done (validated) |
-| D Ceiling (S003) | next (scikit-learn approval) |
-| E Hypotheses | 26 ideas in BACKLOG (8 blind from Codex R006, 2 from S002), ranked after S002 |
+| D Ceiling (S003) | done (validated) |
+| E Hypotheses | 26 ideas in BACKLOG, ranked after S002 and S003; waiting on direction |
 | F-H | - |
 
 ## Key numbers so far
@@ -61,3 +68,6 @@ updated: 2026-10-17
 - **S002**: no discovery effect clears the bar. Strongest: settlement continuation (IC 0.12, gross 2.6
   ticks, decaying to 0.4 by 2015-16) and a -2.2 tick 14:30-15:00 drift (every year, below cost).
 - CL0 / CL1 spread signals and EIA direction: nothing.
+- **S003**: 0 of 432 model strategies beat costs (RW min p 0.96, SPA 0.87); nulls clean; power 90% at
+  8 net ticks, 15% at 4: the data rule out 8+ tick edges only.
+- **D006 decided** (option 2) and **D007** (scikit-learn 1.9.1) on 2026-10-17.

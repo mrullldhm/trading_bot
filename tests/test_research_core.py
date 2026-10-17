@@ -232,3 +232,59 @@ def test_index_builds_from_front_matter(tmp_path):
     (tmp_path / "decisions" / "_template.md").write_text("---\nid: D###\n---\n")
     out = index.build(tmp_path)
     assert "| D001 | X | decided | 2026-10-16 | [decisions/D001-x.md]" in out and "D###" not in out
+
+
+def test_stationary_bootstrap_indices_valid():
+    from propfirm_research.stats import stationary_bootstrap_indices
+    rng = np.random.default_rng(0)
+    idx = stationary_bootstrap_indices(1000, 10.0, rng)
+    assert idx.min() >= 0 and idx.max() < 1000
+    runs = 1 + np.count_nonzero(np.diff(idx) != 1)
+    assert 50 < runs < 160  # about n / mean_block blocks
+
+
+def test_romano_wolf_controls_fwer_and_finds_planted_column():
+    from propfirm_research.stats import romano_wolf
+    rng = np.random.default_rng(1)
+    false_pos = 0
+    for rep in range(30):
+        x = rng.normal(size=(400, 8))
+        false_pos += (romano_wolf(x, n_boot=300, seed=rep)["p_adj"] < 0.05).any()
+    assert false_pos <= 5  # FWER about 5% (30 reps: expect ~1.5)
+    x = rng.normal(size=(400, 8))
+    x[:, 3] += 0.35
+    out = romano_wolf(x, n_boot=500, seed=99)
+    assert out["p_adj"][3] < 0.01 and (np.delete(out["p_adj"], 3) > 0.05).sum() >= 6
+
+
+def test_spa_rejects_only_with_a_real_winner():
+    from propfirm_research.stats import spa_test
+    rng = np.random.default_rng(2)
+    null = spa_test(rng.normal(size=(500, 20)) - 0.05, n_boot=500)
+    assert null["p"] > 0.05
+    x = rng.normal(size=(500, 20))
+    x[:, 7] += 0.3
+    hit = spa_test(x, n_boot=500)
+    assert hit["p"] < 0.01 and hit["best"] == 7
+
+
+def test_simultaneous_upper_covers_all_true_edges():
+    from propfirm_research.stats import simultaneous_upper
+    rng = np.random.default_rng(5)
+    misses = 0
+    for rep in range(20):
+        true = np.linspace(-2, 3, 6)
+        trade = rng.random((600, 6)) < 0.6
+        gross = np.where(trade, true + rng.normal(0, 20, (600, 6)), 0.0)
+        u = simultaneous_upper(gross, trade, n_boot=300, seed=rep)
+        misses += (u["upper"] < true).any()
+        assert u["c"] > 1.645  # a joint bound is wider than a single one
+    assert misses <= 3  # about 5% of 20 families
+
+
+def test_bootstrap_pvalues_never_zero():
+    from propfirm_research.stats import romano_wolf, spa_test
+    x = np.random.default_rng(0).normal(size=(300, 3))
+    x[:, 0] += 2.0
+    assert romano_wolf(x, n_boot=99)["p_adj"].min() == pytest.approx(0.01)
+    assert spa_test(x, n_boot=99)["p"] == pytest.approx(0.01)

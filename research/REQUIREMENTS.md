@@ -55,7 +55,8 @@ regression-tested against the old code.
 | G5 | share of positive years (no-trade year = not positive) | ≥ 60% | `orb_search.py:67, 266, 279` |
 | G6 | best year / total | ≤ 50% | `orb_search.py:68, 267, 280` |
 | G7 | best day / total | ≤ 25% | `orb_search.py:69, 268, 281` |
-| **G8** | p95 over 2,000 simulated Combines of the worst drop (end-of-day peak minus intraday low) in the first 60 days | ≤ $1,000 on 50K; **programme: 50% of the account's MLL** = $1,000 / $1,500 / $2,250 (D003) | `orb_search.py:70, 282`; `propsim.py:24, 84-85, 122` |
+| **G8** | **Programme (D006, 2026-10-17):** 2,000 simulated Combines on the **stress-cost** daily series, DLL on, $500 reserve: pass rate and the upper 95% bound of P(fail) (Wilson, or the larger of it and a t bound over independent outer draws). p95 / p99 60-day drops reported, not gated | pass ≥ 50% **and** UCB P(fail) ≤ 10% | `propfirm_research.combine.gate_g8` |
+| G8 (old, strategies 1-8) | p95 over 2,000 simulated Combines of the worst drop (end-of-day peak minus intraday low) in the first 60 days | ≤ $1,000 on 50K (D003 had scaled it to 50% of the MLL) | `orb_search.py:70, 282`; `propsim.py:24, 84-85, 122` |
 | G9 | plateau: share of one-step neighbour configs with total > 0 | ≥ 60% (a config with no neighbours fails) | `orb_search.py:71, 195-205, 289` |
 
 Selection score (ranking only): one-sided 95% lower bound of the Combine pass rate,
@@ -90,7 +91,7 @@ p − 1.645·√(p(1−p)/2000) (`orb_search.py:208-209`).
 - V3 (PBO) and V4 (deflated Sharpe) are computed over the **full candidate universe**: every variant
   explored in discovery for the hypotheses involved (from the ledger), with its dependence structure
   (effective trial count as in `orb_search.effective_trials`), not only the declared neighbours.
-- Holdout 2022+: V5-V9 plus G8 recomputed on holdout days, plus the combined skill test of PROTOCOL §4.2.
+- Holdout 2022+: V5-V9 plus G8 (D006 rule) recomputed on holdout days, plus the combined skill test of PROTOCOL §4.2.
   Because 2022+ was touched before (HOLDOUTS.md), it is a quasi-holdout; the **practice account is the
   confirmatory final test**.
 
@@ -106,7 +107,7 @@ p − 1.645·√(p(1−p)/2000) (`orb_search.py:208-209`).
 - the line follows new end-of-day highs, capped at the start balance;
 - pass when the balance reaches the target and the best day is ≤ 55% of the balance;
 - `combine.py` adds the account presets, the DLL (a day whose low reaches −DLL is closed at −DLL) and
-  G8 at 50% of the MLL. With 50K settings and the DLL off it must equal `propsim.pass_probability`.
+  G8 (`gate_g8`, D006). With 50K settings and the DLL off it must equal `propsim.pass_probability`.
 
 ---
 

@@ -73,3 +73,37 @@ S002-042,2026-10-16T21:12:45Z,S002,access,discovery,0,,,,,,,,,done rows=2227364 
 S002-043,2026-10-16T21:12:45Z,S002,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
 S002-044,2026-10-16T21:12:51Z,S002,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S002 atlas (full): second month for the term structure
 S002-045,2026-10-16T21:13:53Z,S002,descriptive,discovery,323,S002 market atlas (BH over all tests),36,,DESCRIPTIVE,,beec09f2e96ba27929e099dcab144acd851ecddb4f9fc0b2acb63a6a28775d0e,214829145ecc2e2254d90767fe70d62ce0b22674e24e3b3645d200caf72cac92,data/research/s002/20261016T211351Z_full,"full: 1685 days, 295 EIA rule days; value = tests with q < 0.1"
+S003-001,2026-10-16T21:34:09Z,S003,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S003 ceiling (quick): front month
+S003-002,2026-10-16T21:34:25Z,S003,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S003 ceiling (quick): front month
+S003-003,2026-10-16T21:34:25Z,S003,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S003 ceiling (quick): second month (slope feature)
+S003-004,2026-10-16T21:34:37Z,S003,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S003 ceiling (quick): second month (slope feature)
+S003-005,2026-10-16T21:35:02Z,S003,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S003 ceiling (quick): front month
+S003-006,2026-10-16T21:35:18Z,S003,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S003 ceiling (quick): front month
+S003-007,2026-10-16T21:35:18Z,S003,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S003 ceiling (quick): second month (slope feature)
+S003-008,2026-10-16T21:35:30Z,S003,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S003 ceiling (quick): second month (slope feature)
+S003-009,2026-10-16T21:35:58Z,S003,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S003 ceiling (quick): front month
+S003-010,2026-10-16T21:36:14Z,S003,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S003 ceiling (quick): front month
+S003-011,2026-10-16T21:36:14Z,S003,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S003 ceiling (quick): second month (slope feature)
+S003-012,2026-10-16T21:36:26Z,S003,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S003 ceiling (quick): second month (slope feature)
+S003-013,2026-10-16T21:37:16Z,S003,exploratory,discovery,24,"S003 ceiling: Romano-Wolf over all (cell, model, rule) strategies, base cost",0,0.85,DESCRIPTIVE,,b244150b6ff60f70ca8b8a448f4dc24a6f80ddf0ae3eef49ddda46ddbd6ed4a9,e30e4355cd5d25081a9a7fccc4963e4ec895657a349e537c8e551f3da62ec956,data/research/s003/20261016T213714Z_quick,quick: 4 cells x 3 models x 2 rules; value = RW p<0.05 at base; stress 0; SPA p 0.755; controls 7 runs
+S003-014,2026-10-16T21:51:59Z,S003,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S003 R010 check: how often a flat exit uses a bar after the flat time
+S003-015,2026-10-16T21:52:14Z,S003,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S003 R010 check: how often a flat exit uses a bar after the flat time
+S003-016,2026-10-16T21:54:41Z,S003,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S003 ceiling (quick): front month
+S003-017,2026-10-16T21:54:57Z,S003,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S003 ceiling (quick): front month
+S003-018,2026-10-16T21:54:57Z,S003,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S003 ceiling (quick): second month (slope feature)
+S003-019,2026-10-16T21:55:08Z,S003,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S003 ceiling (quick): second month (slope feature)
+S003-020,2026-10-16T21:56:11Z,S003,exploratory,discovery,36,"S003 ceiling: Romano-Wolf over all (cell, model, rule) strategies, base cost",0,0.845771144278607,DESCRIPTIVE,,acfec7b9955b58a6ed0003eb2425bf733bdce80af4517d2e0f1aaa308cadc007,e30e4355cd5d25081a9a7fccc4963e4ec895657a349e537c8e551f3da62ec956,data/research/s003/20261016T215609Z_quick,quick: 4 cells x 3 models x 3 rules; value = RW p<0.05 at base; stress 0; SPA p 0.796; controls 12 runs
+S003-021,2026-10-16T21:56:27Z,S003,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S003 ceiling (full): front month
+S003-022,2026-10-16T21:56:43Z,S003,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S003 ceiling (full): front month
+S003-023,2026-10-16T21:56:43Z,S003,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S003 ceiling (full): second month (slope feature)
+S003-024,2026-10-16T21:56:54Z,S003,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S003 ceiling (full): second month (slope feature)
+S003-025,2026-10-16T22:10:28Z,S003,exploratory,discovery,432,"S003 ceiling: Romano-Wolf over all (cell, model, rule) strategies, base cost",0,0.9635182408795602,DESCRIPTIVE,,acfec7b9955b58a6ed0003eb2425bf733bdce80af4517d2e0f1aaa308cadc007,e30e4355cd5d25081a9a7fccc4963e4ec895657a349e537c8e551f3da62ec956,data/research/s003/20261016T221026Z_full,full: 48 cells x 3 models x 3 rules; value = RW p<0.05 at base; stress 0; SPA p 0.869; controls 94 runs
+S003-026,2026-10-16T22:11:30Z,S003,access,discovery,0,,,,,,,,,"intent CL.v.0 warmup_days=0: S003 post-hoc leak check (90% leak), after the headline run"
+S003-027,2026-10-16T22:11:47Z,S003,access,discovery,0,,,,,,,,,"done rows=2227364 CL.v.0 warmup_days=0: S003 post-hoc leak check (90% leak), after the headline run"
+S003-028,2026-10-16T22:11:47Z,S003,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S003 post-hoc leak check: second month
+S003-029,2026-10-16T22:11:58Z,S003,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S003 post-hoc leak check: second month
+S003-030,2026-10-16T22:13:27Z,S003,exploratory,discovery,3,S003 post-hoc leak strength check,0.0004997501249375312,,DESCRIPTIVE,,,,,"POST HOC after the headline run: leaked feature 90/80/70% right at 14:35+flat; 0.9: p 0.0005, net 8.06; 0.8: p 0.0005, net 3.78; 0.7: p 0.0910, net 2.39"
+S003-031,2026-10-16T22:13:52Z,S003,access,discovery,0,,,,,,,,,intent CL.v.0 warmup_days=0: S003 export of strategy matrices for Codex replication R011
+S003-032,2026-10-16T22:14:08Z,S003,access,discovery,0,,,,,,,,,done rows=2227364 CL.v.0 warmup_days=0: S003 export of strategy matrices for Codex replication R011
+S003-033,2026-10-16T22:14:08Z,S003,access,discovery,0,,,,,,,,,intent CL.v.1 warmup_days=0: S003 export: second month
+S003-034,2026-10-16T22:14:19Z,S003,access,discovery,0,,,,,,,,,done rows=1743143 CL.v.1 warmup_days=0: S003 export: second month
