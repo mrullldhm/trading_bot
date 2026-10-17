@@ -151,6 +151,7 @@ class Atlas:
         self.shifted = shifted  # holiday-week candidate slots: columns day, minute_et
         self.tests = []
         self._seg = {}
+        self.exit_missing = {}  # D009: windows skipped for a missing exact exit bar
         self.r1 = minute_returns(df)
         self.mod = df["mod"].to_numpy()
         self.day = df["trading_day"].to_numpy()
@@ -166,6 +167,7 @@ class Atlas:
         key = (tag, start, end)
         if key not in self._seg:
             w = grid.windows(frame, [(start, end)], days=self.days)
+            self.exit_missing[f"{tag}:{start}-{end}"] = int(w["exit_missing"].sum())
             self._seg[key] = pd.Series(np.where(w["valid"], w["ret_ticks"], np.nan), index=self.days)
         return self._seg[key]
 
@@ -444,7 +446,8 @@ class Atlas:
         rows = []
         for name, (a, b), eia_only in WINDOWS:
             w = grid.windows(df, [(a, b)], days=self.days)
-            ok = w["valid"].to_numpy() & (self.eia_mask if eia_only else True)
+            in_scope = self.eia_mask if eia_only else True
+            ok = w["valid"].to_numpy() & in_scope
             ws = w[ok]
             i0 = np.searchsorted(tm, ws["entry_tmin"].to_numpy())
             i1 = np.searchsorted(tm, ws["exit_tmin"].to_numpy())
@@ -453,6 +456,7 @@ class Atlas:
             sd = float(ws["ret_ticks"].std())
             net_sr2 = 2 * sd / np.sqrt(252)  # every eligible day traded
             rows.append({"window": name, "eia_days_only": bool(eia_only), "days": int(ok.sum()), "sd_ticks": sd,
+                         "exit_missing": int((w["exit_missing"].to_numpy() & in_scope).sum()),
                          "mae_p50_ticks": float(np.median(adverse)), "mae_p95_ticks": float(np.quantile(adverse, 0.95)),
                          "entry_bar_range_p95": float(np.quantile(rng1[i0], 0.95)),
                          "exit_bar_range_p95": float(np.quantile(rng1[i1], 0.95)),
@@ -593,6 +597,7 @@ def main(argv=None):
                 "data_second": fingerprint(df2), "eia_csv_sha256": ledger.sha256_file(eia_calendar.OUT_FILE),
                 "eia_days": int(len(eia_days)), "shifted_candidates": int(len(shifted)), "days": int(len(at.days)),
                 "regime_counts": regime_counts, "tests": int(len(tests)), "q_lt_0.10": n_q,
+                "exit_missing_segments": at.exit_missing,
                 "seconds": round(time.time() - t0)}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1, default=str))
     data_sha = hashlib.sha256((manifest["data"]["sha256_all_columns"] + manifest["data_second"]["sha256_all_columns"]

@@ -71,6 +71,8 @@ Paths starting `data/backtests/` are local reports (not in git); `prior-work/STR
 | K4.8 | 1-60 minute returns mean-revert (VR 0.89-0.94 NY, 0.87-0.92 London, 0.78-0.86 Asia) in every block: mostly bid-ask bounce of last-trade prices, not a tradeable edge. Variance ratios must use a filled minute grid; unbroken traded stretches select fast markets in thin hours | CONFIRMED (R009 VR(30) 0.904 vs 0.905) | S002, R008 |
 | K4.9 | Liquidity: Asia 18:30-02:00 has 15-27 lots/min and 25-40% thin minutes (< 5 lots), 83-93% minute coverage; 18:05 entries are thin 20% of the time; 09:00-11:00 and 14:00-14:30 carry 670-1,080 lots/min | CONFIRMED (descriptive) | S002 half-hour table |
 | K4.10 | Contango dominated 2010-16 (1,315 vs 299 synchronised days); no term-structure regime changes the naive overnight -> NY or first-hour -> rest rules beyond noise (best q 0.19) | CONFIRMED (counts R009) | S002 regimes |
+| K4.11 | **Conditioned settlement continuation (H025)**: trading the 14:25-14:34 direction at 14:35 to 16:05 only when the absolute move is above its trailing 60-day 75th percentile gives 5.85 gross ticks per trade (378 trades, t 4.3, net Sharpe 0.97 at base cost), twice the naive 2.75, but it decays 9.5 / 5.9 / 1.6 ticks by block (below cost in 2015-16) and is far from validatable (needs ~10 net ticks). A volume filter does worse (2015-16 negative) | CONFIRMED (discovery, one frozen family; Codex replication R015 exact) | hypotheses/H025 card |
+| K4.12 | **Executable post-settlement short (H026)**: short 14:30 -> 15:00 every day earns 2.25 gross ticks (1,616 trades, t 6.1, positive in every block) = -0.16 net at base cost | CONFIRMED (discovery; R015 exact) | hypotheses/H026 card |
 
 ## K5. Direction, holding period, stops, filters
 

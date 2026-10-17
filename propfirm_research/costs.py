@@ -17,3 +17,5 @@ def round_trip_ticks(slip_ticks: float = BASE_SLIP) -> float:
 
 BASE_USD = round_trip_usd(1, BASE_SLIP)  # 24.02
 STRESS_USD = round_trip_usd(1, STRESS_SLIP)  # 44.02
+BASE_TICKS = round_trip_ticks(BASE_SLIP)  # 2.402
+STRESS_TICKS = round_trip_ticks(STRESS_SLIP)  # 4.402

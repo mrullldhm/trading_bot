@@ -1,4 +1,8 @@
-"""Parameterised Topstep Combine simulator: 50K / 100K / 150K, Daily Loss Limit, G8 at 50% of the MLL.
+"""Parameterised Topstep Combine simulator: 50K / 100K / 150K, Daily Loss Limit, G8 per D006 (`gate_g8`).
+
+G8 is `gate_g8` only (D006: stress-cost pass >= 50% and UCB P(fail) <= 10%, $500 reserve, DLL on). `odds()`
+still reports the superseded D003 drawdown check (p95 60-day drop <= 50% of the MLL) as `dd_d003_ok`, a
+diagnostic that confirmatory code must never use as the gate.
 
 Same model as propfirm_backtest/propsim.py (which is frozen and hard-codes 50K): trading days are
 block-bootstrapped (day P&L and intraday low, no-trade days included), the MLL trails the end-of-day peak
@@ -33,8 +37,8 @@ class Account:
     consistency: float = 0.55
 
     @property
-    def g8_limit(self) -> float:
-        return 0.5 * self.mll  # D003
+    def dd_limit_d003(self) -> float:
+        return 0.5 * self.mll  # superseded D003 G8 drawdown limit: diagnostic only (D006)
 
 
 ACCOUNTS = {
@@ -160,7 +164,7 @@ def odds(day_pnl: np.ndarray, day_low: np.ndarray, account: Account | str = "50K
         "account": acc.name, "contracts": contracts, "dll": dll, "reserve": reserve,
         "pass": float(r[0]), "fail": float(r[1]), "neither": float(1 - r[0] - r[1]),
         "fail_ucb95": wilson_upper(fails, n_sims), "p95_dd": float(r[2]), "p99_dd": float(r[3]),
-        "g8_limit": acc.g8_limit, "g8_ok": bool(r[2] <= acc.g8_limit),
+        "dd_limit_d003": acc.dd_limit_d003, "dd_d003_ok": bool(r[2] <= acc.dd_limit_d003),
         "median_days_pass": float(r[4]) if not math.isnan(r[4]) else float("nan"),
         "dll_hit_days": hit_share, "p95_dd_account": float(r[5]), "p99_dd_account": float(r[6]),
     }
@@ -202,7 +206,7 @@ def odds_many(day_pnl2d: np.ndarray, day_low2d: np.ndarray, account: Account | s
     fails = np.rint(r[:, 1] * n_sims).astype(int)
     return {"pass": r[:, 0], "fail": r[:, 1], "neither": 1 - r[:, 0] - r[:, 1], "fails": fails,
             "fail_ucb95": np.array([wilson_upper(int(f), n_sims) for f in fails]),
-            "p95_dd": r[:, 2], "p99_dd": r[:, 3], "g8_ok": r[:, 2] <= acc.g8_limit,
+            "p95_dd": r[:, 2], "p99_dd": r[:, 3], "dd_d003_ok": r[:, 2] <= acc.dd_limit_d003,
             "median_days_pass": r[:, 4], "dll_hit_days": hit,
             "p95_dd_account": r[:, 5], "p99_dd_account": r[:, 6]}
 

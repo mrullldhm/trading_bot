@@ -3,7 +3,12 @@
 Conventions (PROTOCOL §4.6):
 - the decision at time T uses only bars that started before T; entry = open of the first bar at or after T
   (at most ENTRY_TOL minutes late), i.e. "next-minute open";
-- exit = open of the first bar at or after the exit time (at most EXIT_TOL late);
+- exit = open of the bar that starts exactly at the exit time, never a later bar (D009); if that bar is
+  missing the window is invalid and `exit_missing` is True;
+- `entry_ok` / `entry_contract`: every check known by the entry time passed (the entry bar itself, at most
+  ENTRY_TOL minutes after the decision time; the flat schedule; exit not after the flat time); `valid`
+  additionally needs the exact exit bar in the same contract, known only at the exit (R014: callers keep
+  entry-time masks and evaluated trades apart);
 - flat time per window = the earliest of 16:05 ET (12:55 ET on scheduled short days), 5 min before the
   contract expires, 5 min before the scheduled roll to the next contract (roll = the next contract's first
   front minute floored to the hour, as bars.py; known in advance). A fixed exit after the flat time makes
@@ -27,7 +32,6 @@ SHORT_FLAT_MOD = 12 * 60 + 55
 EXPIRY_BUFFER = 5
 ROLL_BUFFER = 5
 ENTRY_TOL = 5
-EXIT_TOL = 5
 FLAT = -1  # exit marker: at the day's flat time
 
 
@@ -109,9 +113,13 @@ def windows(df: pd.DataFrame, specs: list[tuple[int, int]], days: np.ndarray | N
         t1 = day_flat if end_mod == FLAT else clock_tmin(days, end_mod)
         ok &= t1 > t0
         ok &= t1 <= day_flat
+        ok &= tmin[i0c] < t1  # a late entry bar must still start before the exit minute
+        entry_ok = ok.copy()  # checks known by the entry time
         i1 = np.searchsorted(tmin, t1)
         i1c = np.minimum(i1, n - 1)
-        ok &= (i1 < n) & (tmin[i1c] - t1 <= EXIT_TOL) & (contract[i1c] == contract[i0c])
+        has_exit = (i1 < n) & (tmin[i1c] == t1)  # D009: exactly the exit minute, never later
+        exit_missing = ok & ~has_exit
+        ok &= has_exit & (contract[i1c] == contract[i0c])
         a = np.where(ok, i0c, -1)
         b = np.where(ok, i1c, -1)
         hi, lo = _extremes(high, low, a, b)
@@ -119,6 +127,8 @@ def windows(df: pd.DataFrame, specs: list[tuple[int, int]], days: np.ndarray | N
         exit_ = np.where(ok, opn[i1c], np.nan)
         rows.append(pd.DataFrame({
             "trading_day": days, "start_mod": start_mod, "end_mod": end_mod, "valid": ok,
+            "exit_missing": exit_missing, "entry_ok": entry_ok,
+            "entry_contract": np.where(entry_ok, contract[i0c], None),
             "contract": np.where(ok, contract[i0c], None),
             "entry_tmin": np.where(ok, tmin[i0c], -1), "exit_tmin": np.where(ok, tmin[i1c], -1),
             "entry": entry, "exit": exit_, "ret_ticks": exit_ - entry,

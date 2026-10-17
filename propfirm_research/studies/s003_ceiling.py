@@ -219,7 +219,7 @@ class Features:
 
 def targets(df: pd.DataFrame, days: np.ndarray, T: int) -> pd.DataFrame:
     """Per horizon: executable return (ticks) from the T bar open; day-session exits past 16:05 cut to flat."""
-    out = {}
+    out, missing = {}, {}
     day_session = 0 <= T < 18 * 60
     for h in HORIZONS:
         if h == "flat":
@@ -230,7 +230,10 @@ def targets(df: pd.DataFrame, days: np.ndarray, T: int) -> pd.DataFrame:
                 end = F_
         w = grid.windows(df, [(T, end)], days=days)
         out[h] = np.where(w["valid"], w["ret_ticks"], np.nan)
-    return pd.DataFrame(out, index=days)
+        missing[str(h)] = int(w["exit_missing"].sum())
+    res = pd.DataFrame(out, index=days)
+    res.attrs["exit_missing"] = missing  # D009: windows skipped for a missing exact exit bar
+    return res
 
 
 # ---------------------------------------------------------------- walk-forward -----------------------
@@ -504,6 +507,7 @@ def main(argv=None):
     manifest = {"item": ITEM, "stamp": stamp, "tag": tag, "code_sha256": code_hash(), "data": fingerprint(df),
                 "data_second": fingerprint(df2), "cells": [cell_name(*c) for c in cells], "models": MODELS,
                 "test_years": TEST_YEARS, "n_boot": N_BOOT, "strategies": len(summary),
+                "exit_missing": {str(T): t.attrs["exit_missing"] for T, t in targs.items()},
                 "rw_sig_base": n_sig, "rw_sig_stress": n_sig_stress, "spa": spa,
                 "simultaneous_c": summary.attrs.get("c"),
                 "all_upper_below_stress": bool(summary["upper_below_stress_cost"].dropna().all()),

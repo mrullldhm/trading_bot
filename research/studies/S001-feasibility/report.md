@@ -127,6 +127,8 @@ in 250 days); for G8 everyone wants low sd.
 Planted edges are constant per trade; real edges vary with regime. Random-direction noise keeps CL's
 real fat tails and clustering only within 5-day blocks.
 
+**Exit convention (D009, 2026-10-17).** This study used the earlier rule: an exit could fill at the first bar up to 5 minutes after the exit minute (16:06-16:09 for the 16:05 flat on about 1% of days). These numbers were not re-run: the archived outputs named under Results (`data/research/<study>/<stamp>/` with `manifest.json`) and the tables in this folder are the record. The command below now applies the strict rule (exact exit bar, else the window is skipped and counted), so a rerun can differ slightly wherever an exit bar is missing.
+
 ## Reproduce
 `.venv/bin/python -m propfirm_research.studies.s001_feasibility` (both parts, ~9 min; `--part A|B`, `--quick`).
 

@@ -1,0 +1,5 @@
+variant,in_family,emitted,unevaluable,n,trades_per_year,gross,sd,t,p_one,net_base,net_stress,sharpe_net_base_ann,gross_2010-12,n_2010-12,gross_2013-14,n_2013-14,gross_2015-16,n_2015-16,mde_net_validation,sign_ok,stress_ok,power_ok,inconclusive,q,q_ok,promote
+v1_move_filter,True,381,3,378,57.551,5.8519,26.479,4.2968,1.1042e-05,3.4499,1.4499,0.9742,9.5474,137,5.9174,121,1.5667,120,4.945,True,True,False,False,2.2084e-05,True,False
+v2_volume_filter,True,422,0,422,64.25,3.2488,26.489,2.5195,0.0060605,0.84682,-1.1532,0.2541,7.3309,139,4.2378,143,-1.8143,140,4.6819,False,False,False,False,0.0060605,True,False
+v3_union,True,644,3,641,97.593,3.7395,25.161,3.7628,9.1725e-05,1.3375,-0.66253,0.52025,6.2445,229,4.4375,208,0.21569,204,3.6084,True,False,False,False,0.0001223,True,False
+ref_naive_continuation,False,1568,17,1551,236.14,2.7498,22.169,4.8849,5.7079e-07,0.34784,-1.6522,0.23897,4.7911,608,2.6955,463,0.21667,480,2.0439,True,False,False,False,,False,False

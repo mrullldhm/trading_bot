@@ -149,8 +149,12 @@ that has its own power calculation.
   1-tick trade-through (fill rules of `propfirm_backtest/orb_engine.py:273-340`).
 - Flat by **16:05 ET** (the live bot's plan; Topstep's hard close is 16:10 ET), 12:55 ET on CME short
   days, 5 minutes before expiry; never hold across a contract roll.
+- Exits fill at the open of the bar that starts exactly at the exit minute, never a later bar; a missing
+  exit bar makes the window invalid and is counted in the report (D009, 2026-10-17).
 - Combine simulations use `propfirm_research.combine` with the account's MLL, target, 55% consistency
-  rule and **Daily Loss Limit switched on**; G8 is checked at 50% of the account's MLL (D003).
+  rule and **Daily Loss Limit switched on**. G8 is `combine.gate_g8` (D006): on the stress-cost daily
+  series with a $500 reserve, pass >= 50% and the upper 95% bound of P(fail) <= 10%. The old D003 rule
+  (p95 60-day drop <= 50% of the MLL) is reported as the diagnostic `dd_d003_ok`, never used as the gate.
 
 ### 4.7 Kill criteria for the whole programme
 Adopted from Codex (R001). CL-on-OHLCV is declared not viable when all four hold:
@@ -300,6 +304,6 @@ The owner (not Claude, not Codex) decides:
 | PBO | Probability that the in-sample winner is a below-median performer out of sample |
 | MLL | Topstep's Maximum Loss Limit: fail line that trails the best end-of-day balance |
 | DLL | Topstep's Daily Loss Limit: hitting it closes positions and stops trading for that day only |
-| G8 | Project gate: in 95% of simulated attempts, the worst drop in the first 60 days stays within 50% of the MLL |
+| G8 | Project gate (D006): in simulated Combines on stress costs with a $500 reserve, pass at least 50% of the time and keep the upper 95% bound of the fail rate at or below 10%. (Before D006: the worst drop in the first 60 days within 50% of the MLL in 95% of attempts) |
 | MAE / MFE | Worst / best price move during a trade |
 | Planted edge | A fake, known edge added to real data to prove the pipeline can find edges |

@@ -144,9 +144,11 @@ def part_b(df: pd.DataFrame, n_seeds: int, n_sims: int, templates: dict, log=pri
                                     "template": name, "seed": s, "pair": s // 2, "freq": freq, "cost": cost,
                                     "g_gross": g, "e_net": g - BASE_TICKS, "e_net_stress": g - STRESS_TICKS,
                                     "account": acc, "contracts": c, "reserve": res,
-                                    "n_sessions": n, "n_eligible": int(valid.sum()), **moments[k],
+                                    "n_sessions": n, "n_eligible": int(valid.sum()),
+                                    "n_exit_missing": int(w["exit_missing"].sum()), **moments[k],
                                     **{key: v[k] for key, v in o.items()}})
-        log(f"  {name}: {n} sessions, {int(valid.sum())} eligible, {time.time() - t0:.0f} s")
+        log(f"  {name}: {n} sessions, {int(valid.sum())} eligible, {int(w['exit_missing'].sum())} skipped for a "
+            f"missing exit bar (D009), {time.time() - t0:.0f} s")
     return pd.DataFrame(rows)
 
 
@@ -171,15 +173,16 @@ def summarise_b(cells: pd.DataFrame, n_sims: int) -> pd.DataFrame:
             "fail": grp["fail"].mean(), "fail_pair_max": pair_fail.max(),
             "fail_ucb95": max(wil, tb if np.isfinite(tb) else 1.0), "fail_ucb95_wilson": wil, "fail_ucb95_t": tb,
             "p95_dd": grp["p95_dd"].mean(), "p99_dd": grp["p99_dd"].mean(),
-            "p95_dd_account": grp["p95_dd_account"].mean(), "g8_seed_share": grp["g8_ok"].mean(),
+            "p95_dd_account": grp["p95_dd_account"].mean(), "dd_d003_seed_share": grp["dd_d003_ok"].mean(),
             "median_days_pass": grp["median_days_pass"].median(), "dll_hit_days": grp["dll_hit_days"].mean(),
             "sharpe_ann": mean / np.sqrt(var) * np.sqrt(252) if var > 0 else np.nan,
             "ic": cov / (sdd * sdr) if sdd > 0 and sdr > 0 else np.nan,
             "mean_day_1c": mean, "trades_per_session": tot.n_tr / tot.n_sessions,
             "n_sessions": grp["n_sessions"].iloc[0], "n_eligible": grp["n_eligible"].iloc[0],
+            "n_exit_missing": grp["n_exit_missing"].iloc[0],
         })
     s = pd.DataFrame(out)
-    s["g8_limit"] = s["account"].map({a: v.g8_limit for a, v in combine.ACCOUNTS.items()})
+    s["dd_limit_d003"] = s["account"].map({a: v.dd_limit_d003 for a, v in combine.ACCOUNTS.items()})
     return s
 
 
@@ -195,7 +198,7 @@ def thresholds(e: np.ndarray, ok: np.ndarray) -> tuple[float, float]:
 
 
 CRITERIA = {  # name -> (reserve used, test on a summary frame)
-    "a_g8": (0.0, lambda r: r["p95_dd"].to_numpy() <= r["g8_limit"].to_numpy()),
+    "a_dd_d003": (0.0, lambda r: r["p95_dd"].to_numpy() <= r["dd_limit_d003"].to_numpy()),
     "b_pass50_fail25": (0.0, lambda r: (r["pass"].to_numpy() >= 0.5) & (r["fail"].to_numpy() <= 0.25)),
     "c_failucb1_res500": (500.0, lambda r: r["fail_ucb95"].to_numpy() < FAIL_UCB_MAX),
 }

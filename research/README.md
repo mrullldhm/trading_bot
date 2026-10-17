@@ -102,6 +102,11 @@ reasoning, the decisions and small result tables, and is meant to be committed t
 | [D003](decisions/D003-gate-policy.md) | Gates stay the official bar; G8 scales to 50% of each account's loss limit; any recalibration only with owner approval after S001 |
 | [D004](decisions/D004-sizing-scope.md) | CL contracts only (50K, 100K, 150K Combines); no micro contracts |
 | [D005](decisions/D005-daily-loss-limit.md) | Topstep Daily Loss Limit is a hard rule in every simulation |
+| [D006](decisions/D006-g8-recalibration-proposal.md) | G8 = pass >= 50% and upper bound of P(fail) <= 10% on stress costs, $500 reserve |
+| [D007](decisions/D007-scikit-learn.md) | scikit-learn 1.9.1 added (pinned) for S003 |
+| [D008](decisions/D008-direction-after-s003.md) | After S003: staged settlement-flow data track (new information about settlement flow, 2015-16 first) |
+| [D009](decisions/D009-strict-exit.md) | Strict exits: never fill after the exit minute; a missing exact exit bar skips the window |
+| [D010](decisions/D010-stage1-data-purchase.md) | Stage-1 purchase approved: TAS, signed flow, settlement stats, RB/HO/BZ bars for 2015-16, cap $15 |
 
 The founding plan is [decisions/D000-charter.md](decisions/D000-charter.md).
 

@@ -48,8 +48,14 @@ cheapest (4-8 net ticks per trade); full-session holds (09:00-16:05) need 32+ ti
 | H022 | Next-day EIA correction: fade the release-day 10:30-11:00 return the next day 10:35-11:30 | Noisy inventory headline corrected after overnight analysis | Codex R006 C6 | C | one trade per release vs non-EIA Wednesdays | idea |
 | H023 | Whole-dollar pin: at 14:00 within 1-10 ticks of a whole dollar, trade toward it 14:01-14:30 | Long-gamma dealer hedging pins strikes into settlement | Codex R006 C7 (no option data) | C | exact rule vs the 11-20 tick band | idea |
 | H024 | Globex reopen gap fade: fade 16:05 -> 18:04 gap at 18:05, exit 20:00 | Thin reopen book overshoots | Codex R006 C8; adverse prior (K4.1) | C | one daily sign trade, 2-tick costs | idea |
-| H025 | Settlement continuation, conditioned: at 14:35 trade the 14:25-14:35 direction to 16:05 when the move / settlement volume is large | Settlement-benchmarked flow keeps arriving after the window (TAS / index hedges) | S002 (Claude) | C+ | naive base measured (IC 0.12, decaying); conditioning variables fixed before looking | idea |
-| H026 | Post-settlement drift: 14:30-15:00 is negative on average (-2.2 ticks, every year) | Settlement-window buying unwinds | S002 (Claude) | C | component / filter only (below cost alone) | idea |
+| H025 | Settlement continuation, conditioned: at 14:35 trade the 14:25-14:35 direction to 16:05 when the move / settlement volume is large | Settlement-benchmarked flow keeps arriving after the window (TAS / index hedges) | S002 (Claude) | C+ | naive base measured (IC 0.12, decaying); conditioning variables fixed before looking | **parked** ([card](H025-settlement-continuation/card.md)): best variant 5.85 gross ticks, decays to 1.6; power fails |
+| H026 | Post-settlement drift: 14:30-15:00 is negative on average (-2.2 ticks, every year) | Settlement-window buying unwinds | S002 (Claude) | C | component / filter only (below cost alone) | **parked** ([card](H026-post-settlement-drift/card.md)): 2.25 gross ticks, below cost |
+| H027 | TAS / aggressive-flow settlement signal: at 14:34, signed TAS volume and signed aggressive outright volume over 14:25-14:34 (trade only when the imbalance is above its trailing 60-day 75th percentile) predict 14:35-16:05 | Benchmark-bound participants must trade at settlement; dealers who sell TAS hedge in the 14:28-14:30 window and may carry inventory after it. Sign (continuation vs reversal) fixed in the card before looking | Codex R012 E1; Claude (TAS hedging); Ge, Kang, Tang, Yang 2023 (TAS pressure) | B- | buy 2015-16 CLT trades + CL trades 14:20-14:35 (D010); one family of <= 4 variants | idea (needs data) |
+| H028 | Cross-energy settlement lead: at 14:34 the vol-scaled RB / HO (/ Brent) return minus CL's over 14:25-14:34 predicts CL 14:35-16:05 | Product markets carry refining information; CL's own settlement flow hides the common factor for a while | Codex R012 E2 | C+ | 1-min RB / HO / BZ bars 2015-16 (D010); RB / HO settle in the same window (contamination risk) | idea (needs data) |
+| H029 | EIA consensus surprise: fade / follow actual minus consensus at 10:36-11:30 | Slow participants adjust after the inventory surprise | Codex R012 E3 | C | needs a point-in-time consensus archive | **parked**: MDE 10.3 net ticks on ~250 validation trades (R012) and no auditable consensus data |
+| H030 | Option open-interest pin on CL option expiry days, 14:35-16:05 toward the largest nearby-OI strike | Dealers hedging near-expiry gamma pull the price to strikes | Codex R012 E4 | C | needs option OI history; dealer sign unobserved | idea (needs data) |
+| H031 | Brent -> CL European handoff: vol-scaled Brent minus CL 03:00-07:54 predicts CL 07:56-08:25 | Brent absorbs European physical news first | Codex R012 E5 | C | Brent 1-min bars (ICE dataset coverage unverified; NYMEX BZ thin) | idea (needs data) |
+| H032 | Index roll pressure: short CL 14:35-16:05 on public commodity-index roll days | Index funds sell the front at settlement on roll days | Codex R012 E6 | C- | rebuild the roll calendar from published rules; an index roll is a spread trade and S002 roll weeks showed nothing | idea |
 
 ## Ranking after S002 (2026-10-17; discovery evidence, validated by R009)
 Measured in [S002](../studies/S002-atlas/report.md). "Base" = what the atlas saw for the naive version;
@@ -77,8 +83,28 @@ tick edges (K6.7-K6.9). Consequences for every card:
 - ideas with information outside the ceiling's features (settlement-flow structure H025 / H026, event
   content, other markets, order flow) are the ones worth a card.
 
+## After R012 (2026-10-17): direction D008
+Owner chose the staged settlement-flow data track ([D008](../decisions/D008-direction-after-s003.md)).
+Promotion arithmetic for every card (PROTOCOL §4.5): validation 2017-2021 (~1,250 days) detects an
+annual Sharpe of ~1.42 on the daily P&L series; promotion needs MDE <= half the discovery effect, so the
+discovery estimate must reach a **net annual Sharpe of ~2.85**. Per trade: MDE_net ~ 3.168 x sd /
+sqrt(5 x trades per year); e.g. 14:35-16:05 (sd 22 ticks) at 60 trades a year needs a discovery net
+edge of ~8 ticks.
+
+| Rank | Idea | Why here | Next |
+|---|---|---|---|
+| 1 | H027 TAS / signed flow | new information at the settlement window | quotes, then 2015-16 data (D010) |
+| 2 | H028 cross-energy | cheap 1-min bars; settlement window | quotes with H027 |
+| - | H025 / H026 | existing data; Codex's 4 frozen variants | **done 2026-10-17: 0 / 4 promoted, both parked** |
+| 4 | H030, H031, H032 | data unverified or weak mechanism | ideas |
+| - | H029 | parked on power | - |
+
 ## Parked / rejected
-None yet. Strategies 1-8 are in `prior-work/STRATEGIES-1-8.md`; do not re-test them in another costume.
+- H029 (2026-10-17): parked on power (R012) and data availability; no card.
+- H025 (2026-10-17): parked after the discovery run (power fails; decays to 1.6 gross ticks in 2015-16).
+- H026 (2026-10-17): parked after the discovery run (2.25 gross ticks, below the base cost).
+
+Strategies 1-8 are in `prior-work/STRATEGIES-1-8.md`; do not re-test them in another costume.
 
 ## Rules for adding ideas
 - One line here first, with mechanism and source. No card until it is picked up.

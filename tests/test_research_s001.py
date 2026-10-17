@@ -39,7 +39,7 @@ def test_required_edges_take_reserve_rows_for_criterion_c():
         for e in (S.BASELINE, 0.0):
             rows.append({"template": "t", "freq": 1.0, "cost": "base", "account": "50K", "contracts": 1,
                          "reserve": res, "e_net": e, "pass": 0.6, "fail": fail, "fail_ucb95": fail_ucb,
-                         "p95_dd": 500.0, "g8_limit": 1000.0, "sharpe_ann": 1.0, "ic": 0.1,
+                         "p95_dd": 500.0, "dd_limit_d003": 1000.0, "sharpe_ann": 1.0, "ic": 0.1,
                          "median_days_pass": 50.0})
     req = S.required_edges(pd.DataFrame(rows)).iloc[0]
     assert req["c_failucb1_res500_stable"] == 0.0

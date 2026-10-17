@@ -1,0 +1,2 @@
+variant,in_family,emitted,unevaluable,n,trades_per_year,gross,sd,t,p_one,net_base,net_stress,sharpe_net_base_ann,gross_2010-12,n_2010-12,gross_2013-14,n_2013-14,gross_2015-16,n_2015-16,mde_net_validation,sign_ok,stress_ok,power_ok,inconclusive,q,q_ok,promote
+v4_h026_short,True,1617,1,1616,246.04,2.245,14.859,6.0737,7.7734e-10,-0.15695,-2.157,-0.16421,2.0366,628,2.8405,489,1.9238,499,1.3421,True,False,False,False,3.1094e-09,True,False

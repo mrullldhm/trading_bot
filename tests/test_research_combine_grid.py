@@ -39,7 +39,7 @@ def test_dll_caps_days():
 
 def test_accounts_and_scaling():
     a = combine.ACCOUNTS["150K"]
-    assert (a.mll, a.target, a.dll, a.g8_limit) == (4500, 9000, 3000, 2250)
+    assert (a.mll, a.target, a.dll, a.dd_limit_d003) == (4500, 9000, 3000, 2250)
     pnl, low = series(7, mu=40, sd=200)
     one = combine.odds(pnl, low, "150K", contracts=1, dll=False, n_sims=300)
     two = combine.odds(pnl * 2, low * 2, "150K", contracts=1, dll=False, n_sims=300)  # same as 2 contracts
@@ -276,3 +276,123 @@ def test_gate_g8_d006_rule():
     assert idle["fail"] == 0 and not idle["g8_ok"]  # D006: inactivity no longer passes G8
     diag = combine.gate_g8(good_pnl, good_low, "100K", n_sims=500, n_outer=0)
     assert not diag["g8_ok"]  # without outer draws the result is diagnostic only
+
+
+# --- D009 strict exits ------------------------------------------------------------------------
+
+def drop(df, mod):
+    return df[df["mod"] != mod].reset_index(drop=True)
+
+
+def test_strict_exit_missing_flat_bar_invalid():
+    df = drop(minutes(), 16 * 60 + 5)  # 16:06-16:20 bars still exist: none of them may be used
+    w = grid.windows(df, [(9 * 60, grid.FLAT)], expiry_tmin=EXP).iloc[0]
+    assert not w.valid and w.exit_missing
+
+
+def test_strict_exit_missing_fixed_bar_invalid():
+    df = minutes()
+    full = grid.windows(df, [(9 * 60, 10 * 60)], expiry_tmin=EXP).iloc[0]
+    assert full.valid and not full.exit_missing
+    w = grid.windows(drop(df, 10 * 60), [(9 * 60, 10 * 60)], expiry_tmin=EXP).iloc[0]
+    assert not w.valid and w.exit_missing
+
+
+@pytest.mark.parametrize("case", ["short_day", "roll", "expiry"])
+def test_strict_exit_at_every_cutoff(case):
+    if case == "short_day":
+        df, exp, cut = minutes(day="2016-11-25", contract="CLF7@2016-12"), {"CLF7@2016-12": FAR}, 12 * 60 + 55
+    elif case == "roll":
+        df, exp, cut = minutes(roll_at="11:00"), EXP, 10 * 60 + 55
+    else:
+        df = minutes()
+        exp, cut = {"CLJ6@2016-03": int(df.loc[df["mod"] == 14 * 60 + 30, "tmin"].iloc[0])}, 14 * 60 + 25
+    ok = grid.windows(df, [(9 * 60, grid.FLAT)], expiry_tmin=exp).iloc[0]
+    assert ok.valid and df.set_index("tmin").loc[ok.exit_tmin, "mod"] == cut
+    w = grid.windows(drop(df, cut), [(9 * 60, grid.FLAT)], expiry_tmin=exp).iloc[0]
+    assert not w.valid and w.exit_missing
+
+
+def test_valid_exits_never_after_exit_minute():
+    df = minutes()
+    df = df[np.random.default_rng(3).random(len(df)) > 0.3].reset_index(drop=True)  # 30% of minutes gone
+    specs = [(9 * 60, grid.FLAT), (9 * 60, 10 * 60), (10 * 60 + 30, 14 * 60), (14 * 60 + 35, grid.FLAT)]
+    w = grid.windows(df, specs, expiry_tmin=EXP)
+    want = np.where(w["end_mod"] == grid.FLAT, 16 * 60 + 5, w["end_mod"])
+    mod = df.set_index("tmin")["mod"]
+    v = w["valid"].to_numpy()
+    assert v.any() and w["exit_missing"].any()
+    assert (mod.loc[w.loc[v, "exit_tmin"]].to_numpy() == want[v]).all()
+    for i in np.flatnonzero(w["exit_missing"].to_numpy()):
+        assert want[i] not in set(df["mod"])  # skipped only when the exact exit minute has no bar
+
+
+def test_contract_change_at_exact_exit_bar_is_invalid_not_missing():
+    df = minutes()
+    df.loc[[0, df.index[df["mod"] == 10 * 60][0]], "contract"] = "CLK6@2016-04"  # B first, then A; B again at 10:00
+    w = grid.windows(df, [(9 * 60, 10 * 60)], expiry_tmin=EXP).iloc[0]
+    assert not w.valid and not w.exit_missing
+
+
+def test_exit_missing_only_flags_the_missing_exit_reason():
+    df = minutes()
+    late_entry = df[(df["mod"] < 9 * 60) | (df["mod"] > 9 * 60 + 6)].reset_index(drop=True)
+    cases = [(late_entry, (9 * 60, 10 * 60)),  # entry more than 5 minutes late
+             (df, (15 * 60, 16 * 60 + 10)),  # fixed exit after the flat time
+             (df, (16 * 60 + 5, grid.FLAT))]  # entry at the flat time
+    late_entry_no_exit = drop(late_entry, 10 * 60)  # entry fails first, so the missing exit is not the reason
+    cases.append((late_entry_no_exit, (9 * 60, 10 * 60)))
+    for frame, spec in cases:
+        w = grid.windows(frame, [spec], expiry_tmin=EXP).iloc[0]
+        assert not w.valid and not w.exit_missing, spec
+    w = grid.windows(drop(df, 10 * 60), [(9 * 60, 10 * 60)], expiry_tmin=EXP).iloc[0]
+    assert not w.valid and w.exit_missing
+
+
+@pytest.mark.parametrize("evening,morning", [("2016-03-08", "2016-03-09"),  # plain week
+                                             ("2016-03-13", "2016-03-14"),  # first session after spring-forward
+                                             ("2016-11-06", "2016-11-07")])  # first session after fall-back
+def test_evening_window_strict_exit_across_1800_and_dst(evening, morning):
+    full = pd.concat([minutes(day=evening, start="18:00", end="23:59"),
+                      minutes(day=morning, start="00:00", end="16:20")], ignore_index=True)
+    w = grid.windows(full, [(20 * 60, 3 * 60)], expiry_tmin=EXP).iloc[0]
+    exit_bar = full.set_index("tmin").loc[w.exit_tmin]
+    assert w.valid and exit_bar["mod"] == 3 * 60
+    assert exit_bar["ts_event_utc"].tz_convert("America/New_York").strftime("%Y-%m-%d %H:%M") == f"{morning} 03:00"
+    gone = grid.windows(drop(full, 3 * 60), [(20 * 60, 3 * 60)], expiry_tmin=EXP).iloc[0]
+    assert not gone.valid and gone.exit_missing
+
+
+def test_trades_on_a_skipped_window_are_rejected():
+    df = drop(minutes(), 10 * 60)
+    w = grid.windows(df, [(9 * 60, 10 * 60)], expiry_tmin=EXP)
+    with pytest.raises(ValueError):
+        grid.trade_usd(w, np.array([1]), slip=1.0, fee=4.02)
+    with pytest.raises(ValueError):
+        grid.planted(df, w, np.array([-1]), 5.0, slip=1.0, fee=4.02)
+    assert grid.trade_usd(w, np.array([0]), slip=1.0, fee=4.02)[0][0] == 0.0
+
+
+def test_multi_day_random_missing_bars_exit_at_exact_timestamp():
+    days = ["2016-03-07", "2016-03-08", "2016-03-09", "2016-03-10"]
+    df = pd.concat([minutes(day=d) for d in days], ignore_index=True)
+    df = df[np.random.default_rng(8).random(len(df)) > 0.4].reset_index(drop=True)
+    specs = [(9 * 60, grid.FLAT), (9 * 60, 10 * 60), (14 * 60 + 35, grid.FLAT)]
+    w = grid.windows(df, specs, expiry_tmin=EXP)
+    tday = w["trading_day"].to_numpy(np.int64)
+    end = w["end_mod"].to_numpy()
+    want = np.where(end == grid.FLAT, grid.flat_tmin(tday),
+                    np.array([grid.clock_tmin(np.array([d]), int(m))[0] if m != grid.FLAT else -1
+                              for d, m in zip(tday, end)]))
+    v = w["valid"].to_numpy()
+    assert v.any() and w["exit_missing"].any()
+    assert (w.loc[v, "exit_tmin"].to_numpy() == want[v]).all()
+    have = set(df["tmin"])
+    assert all(want[i] not in have for i in np.flatnonzero(w["exit_missing"].to_numpy()))
+
+
+def test_late_entry_bar_cannot_be_the_exit_bar():
+    df = minutes()
+    df = df[(df["mod"] < 9 * 60) | (df["mod"] >= 9 * 60 + 5)].reset_index(drop=True)  # 09:00-09:04 missing
+    w = grid.windows(df, [(9 * 60, 9 * 60 + 5)], expiry_tmin=EXP).iloc[0]  # entry would be the 09:05 exit bar
+    assert not w.valid and not w.entry_ok and not w.exit_missing
