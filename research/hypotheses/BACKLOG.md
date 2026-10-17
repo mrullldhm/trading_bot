@@ -50,8 +50,8 @@ cheapest (4-8 net ticks per trade); full-session holds (09:00-16:05) need 32+ ti
 | H024 | Globex reopen gap fade: fade 16:05 -> 18:04 gap at 18:05, exit 20:00 | Thin reopen book overshoots | Codex R006 C8; adverse prior (K4.1) | C | one daily sign trade, 2-tick costs | idea |
 | H025 | Settlement continuation, conditioned: at 14:35 trade the 14:25-14:35 direction to 16:05 when the move / settlement volume is large | Settlement-benchmarked flow keeps arriving after the window (TAS / index hedges) | S002 (Claude) | C+ | naive base measured (IC 0.12, decaying); conditioning variables fixed before looking | **parked** ([card](H025-settlement-continuation/card.md)): best variant 5.85 gross ticks, decays to 1.6; power fails |
 | H026 | Post-settlement drift: 14:30-15:00 is negative on average (-2.2 ticks, every year) | Settlement-window buying unwinds | S002 (Claude) | C | component / filter only (below cost alone) | **parked** ([card](H026-post-settlement-drift/card.md)): 2.25 gross ticks, below cost |
-| H027 | TAS / aggressive-flow settlement signal: at 14:34, signed TAS volume and signed aggressive outright volume over 14:25-14:34 (trade only when the imbalance is above its trailing 60-day 75th percentile) predict 14:35-16:05 | Benchmark-bound participants must trade at settlement; dealers who sell TAS hedge in the 14:28-14:30 window and may carry inventory after it. Sign (continuation vs reversal) fixed in the card before looking | Codex R012 E1; Claude (TAS hedging); Ge, Kang, Tang, Yang 2023 (TAS pressure) | B- | buy 2015-16 CLT trades + CL trades 14:20-14:35 (D010); one family of <= 4 variants | idea (needs data) |
-| H028 | Cross-energy settlement lead: at 14:34 the vol-scaled RB / HO (/ Brent) return minus CL's over 14:25-14:34 predicts CL 14:35-16:05 | Product markets carry refining information; CL's own settlement flow hides the common factor for a while | Codex R012 E2 | C+ | 1-min RB / HO / BZ bars 2015-16 (D010); RB / HO settle in the same window (contamination risk) | idea (needs data) |
+| H027 | TAS / signed settlement flow (2x2: TAS or outright flow x residual continuation or temporary-impact unwind) | Benchmark-bound TAS demand is hedged in the 14:28-14:30 window | Codex R012 E1, R016; Claude | B- | D010 data 2015-16, one frozen family of 4 | **rejected at stage 1** ([card](H027-tas-settlement-flow/card.md)): 0 of 4; three wrong-signed; R019 exact |
+| H028 | Cross-energy settlement divergence: CL moves toward RB / HO / BZ after 14:35 | Product markets carry refining information; CL-specific settlement pressure reverts | Codex R012 E2, R016 | C+ | D010 bars 2015-16, one frozen family of 3 | **rejected at stage 1** ([card](H028-cross-energy-settlement/card.md)): 0 of 3, about 0 gross ticks; R019 exact |
 | H029 | EIA consensus surprise: fade / follow actual minus consensus at 10:36-11:30 | Slow participants adjust after the inventory surprise | Codex R012 E3 | C | needs a point-in-time consensus archive | **parked**: MDE 10.3 net ticks on ~250 validation trades (R012) and no auditable consensus data |
 | H030 | Option open-interest pin on CL option expiry days, 14:35-16:05 toward the largest nearby-OI strike | Dealers hedging near-expiry gamma pull the price to strikes | Codex R012 E4 | C | needs option OI history; dealer sign unobserved | idea (needs data) |
 | H031 | Brent -> CL European handoff: vol-scaled Brent minus CL 03:00-07:54 predicts CL 07:56-08:25 | Brent absorbs European physical news first | Codex R012 E5 | C | Brent 1-min bars (ICE dataset coverage unverified; NYMEX BZ thin) | idea (needs data) |
@@ -99,7 +99,20 @@ edge of ~8 ticks.
 | 4 | H030, H031, H032 | data unverified or weak mechanism | ideas |
 | - | H029 | parked on power | - |
 
+## After stage 1 (2026-10-17): settlement-flow track closed
+The staged settlement-flow track (D008) tested every new-information idea at the one place CL shows structure.
+- **Data:** TAS, aggressor-signed outright flow and cross-energy bars, bought for 2015-16 (D010, about $9.5).
+- **Families:** 7 variants, frozen after Codex review (R016, R018) on audited data (S004, R017).
+- **Result:** 0 survive. 5 of 7 have the wrong sign, and the best right-signed variant earns +0.47 gross ticks.
+  Codex replicated it exactly (R019).
+- **Consequences:**
+  - no 2010-14 purchase;
+  - H030 (option-OI pin) and H031 (Brent handoff) keep a low prior;
+  - H032 stays C-.
+- **Next:** the direction goes back to the owner ([D011](../decisions/D011-direction-after-stage1.md)).
+
 ## Parked / rejected
+- H027, H028 (2026-10-17): rejected at stage 1 (D008 kill rule).
 - H029 (2026-10-17): parked on power (R012) and data availability; no card.
 - H025 (2026-10-17): parked after the discovery run (power fails; decays to 1.6 gross ticks in 2015-16).
 - H026 (2026-10-17): parked after the discovery run (2.25 gross ticks, below the base cost).

@@ -55,3 +55,26 @@ signed-flow variant; the $0.04 sample decides whether it works as bought.
 - New data are read only through firewall loaders in `propfirm_research.data`, reviewed by Codex (R016)
   before any analysis.
 - Earlier years (2010-2014) need a new decision after the 2015-16 results.
+
+## Addendum (2026-10-17, session 4): sample result and the owner's line-6 choice
+- Line-1 sample bought for $0.0435 (ledger S004-001, `data/research/stage1/sample_check.json`).
+  - TAS trades carry the aggressor side on 100% of records.
+  - The TAS price is the differential to the settlement in ticks (values -6 to +1, mostly 0), and the
+    last TAS trade is at 14:29:50 ET.
+  - Plain CL.v.0 trades carry a side on 95.7% of volume and 92.4% of records; the rest are side `N`,
+    mostly 1 lot.
+  - Before 2017, ts_recv equals ts_event, and every record carries the "bad ts_recv" flag.
+- The CL side coverage falls in the 90-99% band, which the session-4 plan (frozen before the sample)
+  sends to the owner.
+- **Owner, 2026-10-17: line 6 (mbp-1) replaces line 5.**
+  - mbp-1 trade records keep the reported side and add the best bid/offer at each trade, so the untagged
+    trades can be classified by where they printed.
+  - It is also cheaper: a fresh 20-day quote scaled to 522 weekdays gives $4.46, against $7.53 for
+    line 5.
+  - Line 6's first day (2015-06-10) is checked against the sample before the remaining days are bought.
+- **Deviation, disclosed (session 4):** D010's "Consequences" said each per-day request would be quoted before it
+  was fetched, stopping at the cap. Instead, line 6 was reserved as a whole up front: $4.457 × 1.1 = $4.90.
+  - The $4.457 is a fresh 20-day sample quote scaled to 522 weekdays, 5% above the D010 estimate.
+  - Quoting each day would have doubled the 75-minute download.
+  - The cap still holds with $4.5 to spare: $10.47 reserved worst case for everything.
+  - The real charge is checked against the Databento portal after the download (owner).

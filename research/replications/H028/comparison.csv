@@ -1,0 +1,43 @@
+variant,item,own,claude,difference_own_minus_claude,tolerance,within_tolerance
+v1_products,entry_time_eligible_days,478,,,not reported,N/A
+v1_products,emitted_signals,478,478,0.0,1%,yes
+v1_products,evaluated_trades,475,475,0.0,1%,yes
+v1_products,gross_mean_ticks,-0.267368421053,-0.26737,1.5789469999805128e-06,0.1 tick,yes
+v1_products,sample_sd_ticks,18.797221505,18.797,0.000221504999998956,0.1 tick,yes
+v1_products,one_sided_t,-0.31000111579,-0.31,-1.115790000005834e-06,0.01,yes
+v1_products,gross_mean_2015,-1.49557522124,-1.4956,2.4778760000065958e-05,0.1 tick,yes
+v1_products,gross_mean_2016,0.847389558233,0.84739,-4.4176699998121904e-07,0.1 tick,yes
+v1_products,net_base_ticks,-2.66936842105,-2.6694,3.157894999983313e-05,0.1 tick,yes
+v1_products,net_stress_ticks,-4.66936842105,-4.6694,3.1578950000721306e-05,0.1 tick,yes
+v1_products,trades_per_year,237.988683128,237.99,-0.0013168720000180656,1%,yes
+v1_products,MDE_net_ticks,1.72629764048,1.7263,-2.3595200000503525e-06,0.1 tick,yes
+v1_products,largest_single_day_share,-0.858267716535,,,not reported,N/A
+v1_products,stage1_screen_pass,False,False,False,exact,yes
+v2_brent,entry_time_eligible_days,466,,,not reported,N/A
+v2_brent,emitted_signals,465,465,0.0,1%,yes
+v2_brent,evaluated_trades,462,462,0.0,1%,yes
+v2_brent,gross_mean_ticks,-0.0411255411255,-0.041126,4.5887450000198227e-07,0.1 tick,yes
+v2_brent,sample_sd_ticks,18.914937951,18.915,-6.204900000028601e-05,0.1 tick,yes
+v2_brent,one_sided_t,-0.0467334337638,-0.046733,-4.337638000034838e-07,0.01,yes
+v2_brent,gross_mean_2015,-0.873873873874,-0.87387,-3.873873999915567e-06,0.1 tick,yes
+v2_brent,gross_mean_2016,0.729166666667,0.72917,-3.3333329999551964e-06,0.1 tick,yes
+v2_brent,net_base_ticks,-2.44312554113,-2.4431,-2.554113000030611e-05,0.1 tick,yes
+v2_brent,net_stress_ticks,-4.44312554113,-4.4431,-2.5541129999417933e-05,0.1 tick,yes
+v2_brent,trades_per_year,231.475308642,231.48,-0.00469135800000231,1%,yes
+v2_brent,MDE_net_ticks,1.76137876321,1.7614,-2.1236790000100925e-05,0.1 tick,yes
+v2_brent,largest_single_day_share,-5.73684210526,,,not reported,N/A
+v2_brent,stage1_screen_pass,False,False,False,exact,yes
+v3_agreement,entry_time_eligible_days,465,,,not reported,N/A
+v3_agreement,emitted_signals,250,250,0.0,1%,yes
+v3_agreement,evaluated_trades,249,249,0.0,1%,yes
+v3_agreement,gross_mean_ticks,-0.654618473896,-0.65462,1.5261039999492354e-06,0.1 tick,yes
+v3_agreement,sample_sd_ticks,21.016918798,21.017,-8.120200000050204e-05,0.1 tick,yes
+v3_agreement,one_sided_t,-0.491494751578,-0.49149,-4.751578000006251e-06,0.01,yes
+v3_agreement,gross_mean_2015,-2.56818181818,-2.5682,1.818182000024038e-05,0.1 tick,yes
+v3_agreement,gross_mean_2016,1.50427350427,1.5043,-2.6495730000020146e-05,0.1 tick,yes
+v3_agreement,net_base_ticks,-3.0566184739,-3.0566,-1.847389999998228e-05,0.1 tick,yes
+v3_agreement,net_stress_ticks,-5.0566184739,-5.0566,-1.847389999998228e-05,0.1 tick,yes
+v3_agreement,trades_per_year,124.75617284,124.76,-0.0038271600000001627,1%,yes
+v3_agreement,MDE_net_ticks,2.66586526067,2.6658,6.526067000001134e-05,0.1 tick,yes
+v3_agreement,largest_single_day_share,-0.668711656442,,,not reported,N/A
+v3_agreement,stage1_screen_pass,False,False,False,exact,yes

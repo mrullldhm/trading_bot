@@ -1,0 +1,5 @@
+variant,verdict
+v1_tas_residual,MATCH
+v2_tas_unwind,MATCH
+v3_outright_residual,MATCH
+v4_outright_unwind,MATCH

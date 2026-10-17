@@ -90,13 +90,30 @@ def fake_bars():
                          "volume": 10.0})
 
 
+def bar_store(tmp, monkeypatch, frame=None):
+    """Fake bars written as year-partitioned parquet; returns the files a validation load reads."""
+    base = tmp / "bars"
+    frame = fake_bars() if frame is None else frame
+    for y, g in frame.groupby(frame["ts_event_utc"].dt.year):
+        (base / f"year={y}").mkdir(parents=True, exist_ok=True)
+        g.to_parquet(base / f"year={y}" / "cl.parquet", index=False)
+    monkeypatch.setattr(data, "BARS_DIR", base)
+    return data.files_for("bars", "validation")
+
+
+def reg_data(tmp, files, item_id="H999", **kw):
+    f = tmp / "code.py"
+    f.write_text("x = 1")
+    return prereg.register(tmp / f"{item_id}-test", spec(item_id=item_id, **kw), [f], files)
+
+
 def test_firewall(tmp_ledger, monkeypatch):
-    monkeypatch.setattr(data, "_read", lambda *a: fake_bars())
+    files = bar_store(tmp_ledger, monkeypatch)
     disc = data.load_front("discovery", "S999", "test")
     assert disc["trading_day"].max() <= periods.bounds("discovery")[1]  # nothing after 2016-12-31
     with pytest.raises(data.FirewallError):
         data.load_front("validation", "H999", "test")
-    p = reg(tmp_ledger)
+    p = reg_data(tmp_ledger, files)
     with prereg.open_run(p) as run:
         val = data.load_front("validation", "H999", "test", run=run)
         assert val["trading_day"].min() >= periods.bounds("validation")[0]
@@ -114,16 +131,57 @@ def test_firewall(tmp_ledger, monkeypatch):
             pass  # one run, never re-run
     rows = ledger.read()
     assert rows["kind"].tolist().count("prereg") == 1
-    assert rows["note"].str.startswith("intent").sum() == rows["note"].str.startswith("done").sum() == 2
+    note = rows["note"]
+    done, refused = note.str.startswith("done").sum(), note.str.startswith("refused").sum()
+    assert (done, refused) == (2, 5)  # every attempt: one intent row and exactly one terminal row
+    assert note.str.startswith("intent").sum() == done + refused
 
 
 def test_warmup_reaches_back_never_forward(tmp_ledger, monkeypatch):
-    monkeypatch.setattr(data, "_read", lambda *a: fake_bars())
-    with prereg.open_run(reg(tmp_ledger)) as run:
+    files = bar_store(tmp_ledger, monkeypatch)
+    with prereg.open_run(reg_data(tmp_ledger, files)) as run:
         v = data.load_front("validation", "H999", "t", run=run, warmup_days=3)
     assert v["trading_day"].min() < periods.bounds("validation")[0]
     with pytest.raises(data.FirewallError):
         data.load_front("discovery", "S999", "t", warmup_days=-5)
+
+
+def test_year_range_never_reaches_a_later_period():
+    assert data.year_range("discovery") == (2009, 2016)
+    assert data.year_range("validation") == (2016, 2021)
+    assert data.year_range("validation", warmup_days=400) == (2014, 2021)
+
+
+def test_bar_loader_reads_only_registered_unchanged_files(tmp_ledger, monkeypatch):
+    files = bar_store(tmp_ledger, monkeypatch)
+    p = reg_data(tmp_ledger, files)
+    with prereg.open_run(p) as run:
+        assert len(data.load_front("validation", "H999", "ok", run=run)) > 0
+        extra = files[0].with_name("backup.parquet")
+        extra.write_bytes(files[0].read_bytes())  # a second file in a year folder is read only if registered
+        with pytest.raises(data.FirewallError):
+            data.load_front("validation", "H999", "extra file", run=run)
+        extra.unlink()
+        fake = fake_bars()
+        fake["volume"] = 99.0
+        bar_store(tmp_ledger, monkeypatch, fake)  # same paths, new content
+        with pytest.raises(data.FirewallError):
+            data.load_front("validation", "H999", "changed", run=run)
+    assert ledger.read()["note"].str.startswith("refused").sum() == 2
+
+
+def test_register_accepts_a_generator_and_open_run_checks_hashes_before_the_marker(tmp_ledger, monkeypatch):
+    bar_store(tmp_ledger, monkeypatch)
+    p = reg_data(tmp_ledger, (tmp_ledger / "bars").rglob("*.parquet"))
+    spec_ = json.loads(p.read_text())
+    assert len(spec_["data_files_sha256"]) == 2
+    fake = fake_bars()
+    fake["volume"] = 7.0
+    bar_store(tmp_ledger, monkeypatch, fake)
+    with pytest.raises(prereg.PreregError):
+        with prereg.open_run(p):
+            pass
+    assert not (p.parent / "validation_opened.json").exists()  # the one shot is not spent
 
 
 def test_edited_prereg_refused(tmp_ledger):
@@ -162,7 +220,8 @@ def test_holdout_needs_owner_approval(tmp_ledger):
 
 
 def test_no_bar_reads_outside_data_module():
-    pat = re.compile(r"read_parquet|load_bars|load_minutes|BARS_DIR")
+    pat = re.compile(r"read_parquet|read_table|ParquetFile|load_bars|load_minutes|BARS_DIR|STAGE1_DIR|DBNStore"
+                     r"|from_file|data/processed|propfirm_data\.stage1")
     offenders = [f.name for f in PKG.rglob("*.py") if f.name != "data.py" and pat.search(f.read_text())]
     assert offenders == []
 
@@ -288,3 +347,13 @@ def test_bootstrap_pvalues_never_zero():
     x[:, 0] += 2.0
     assert romano_wolf(x, n_boot=99)["p_adj"].min() == pytest.approx(0.01)
     assert spa_test(x, n_boot=99)["p"] == pytest.approx(0.01)
+
+
+def test_open_run_refuses_changed_code_before_the_marker(tmp_ledger, monkeypatch):
+    files = bar_store(tmp_ledger, monkeypatch)
+    p = reg_data(tmp_ledger, files)
+    (tmp_ledger / "code.py").write_text("x = 2")  # the registered code changed after freezing
+    with pytest.raises(prereg.PreregError, match="code"):
+        with prereg.open_run(p):
+            pass
+    assert not (p.parent / "validation_opened.json").exists()

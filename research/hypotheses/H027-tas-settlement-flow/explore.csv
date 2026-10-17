@@ -1,0 +1,5 @@
+variant,in_family,emitted,unevaluable,n,trades_per_year,gross,sd,t,p_one,net_base,net_stress,sharpe_net_base_ann,gross_2015-16,n_2015-16,mde_net_validation,stress_ok,power_ok,inconclusive,q,q_ok,promote,gross_2015,gross_2016,max_day_share,years_ok,trades_ok,day_share_ok,stage1_pass,item
+v1_tas_residual,True,107,0,107,53.61,-1.9252,18.762,-1.0615,0.85456,-4.3272,-6.3272,-1.639,-1.9252,107,3.6303,False,False,False,0.99963,False,False,-2.9149,-1.15,,False,True,False,False,H027
+v2_tas_unwind,True,107,0,107,53.61,-1.785,13.882,-1.3301,0.90683,-4.187,-6.187,-2.1129,-1.785,107,2.6862,False,False,False,0.99963,False,False,-3.617,-0.35,,False,True,False,False,H027
+v3_outright_residual,True,110,0,110,55.113,0.47273,17.567,0.28223,0.38915,-1.9293,-3.9293,-0.80401,0.47273,110,3.3525,False,False,False,0.99963,False,False,-0.85417,1.5,0.84615,False,True,False,False,H027
+v4_outright_unwind,True,103,0,103,51.606,-3.5922,10.482,-3.4781,0.99963,-5.9942,-7.9942,-3.6212,-3.5922,103,2.0672,False,False,False,0.99963,False,False,-3.025,-3.9524,,False,True,False,False,H027

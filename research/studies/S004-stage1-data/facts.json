@@ -1,0 +1,82 @@
+{
+ "item": "S004",
+ "utc": "2026-10-17T14:01:25.696469+00:00",
+ "code_sha256": "f4437977a74847aeaa6d3238274dde8fda7d47bb181127d5ba076d564cbb994d",
+ "facts": {
+  "data_sha256": {
+   "bars": "d7a84943fe5c206b1ce9e0b0ba81f242ec6190821536484c26728f157b19486f",
+   "tas": "41e57d85c4d638937d0527c577e04a2b684c12d7ece0a75be63e7f03e9a4b160",
+   "cl_mbp1": "91fcb6df310fa4db02d5dbb7843b37fbba61378ad117b6a3a9c33a059ca3f81f",
+   "statistics": "2182ab07910461808b914f10adaaa926df2cce8bffd8abbb3c8b0538ce4b8e2b",
+   "energy": "a3721aa3231c336187ccd08bd939bd780225547acc4165019fc530ddbff60410"
+  },
+  "regular_days": 499,
+  "coverage_share": {
+   "cl_bars": 1.0,
+   "tas_front": 1.0,
+   "cl_mbp1": 1.0,
+   "settlement": 1.0,
+   "RB.v.0": 1.0,
+   "HO.v.0": 0.9979959919839679,
+   "BZ.v.0": 0.9739478957915831
+  },
+  "tas_kind_share": {
+   "outright deferred": 0.2921,
+   "outright front": 0.4865,
+   "spread": 0.2214
+  },
+  "tas_front_days": 499,
+  "tas_front_days_multi_id": 0,
+  "tas_front_days_side_rule_ok": 480,
+  "tas_front_volume_per_day_median": 14241.0,
+  "tas_front_latest_daytime_trade_et": "14:30:00.047556",
+  "tas_front_trades_in_first_second_after_close": 1,
+  "tas_front_trades_after_close": 0,
+  "cl_quote_rule": {
+   "trades_with_reported_side": 5135113,
+   "agree_share": 0.9198734282965146,
+   "contradict_share": 0.04505392578508009,
+   "inside_or_bad_book_share": 0.0350726459184053,
+   "count_accuracy_when_classified": 0.9533084790326399,
+   "volume_accuracy_when_classified": 0.9184024740468913,
+   "unreported_volume_share": 0.07184357119722086,
+   "unreported_classified_volume_share": 0.9987857731258423,
+   "mis_signed_volume_share_estimate": 0.005855139554528759
+  },
+  "cl_days": 501,
+  "cl_days_classified_rule_ok": 501,
+  "cl_days_reported_side_rule_ok": 0,
+  "cl_minute_volume": {
+   "minutes": 7505,
+   "exact_share": 1.0,
+   "trades_minus_bars_sum": 0.0,
+   "abs_diff_p99": 0.0
+  },
+  "cl_contract_match_days": 501,
+  "cl_contract_compared_days": 501,
+  "settlement_vs_vwap": {
+   "days": 501,
+   "within_1_tick_share": 0.9740518962075848,
+   "exact_share": 0.8283433133732535,
+   "abs_dev_p95_ticks": 1.0,
+   "first_differs_from_final_share": 0.011976047904191617,
+   "revisions_per_session_max": 7
+  },
+  "acceptance": {
+   "cl_minute_volume_exact_share >= 0.99": true,
+   "settlement_within_1_tick_share >= 0.95": true,
+   "quote_rule_mis_signed_volume_estimate <= 0.01": true,
+   "quote_rule_volume_accuracy_when_classified >= 0.80": true,
+   "mbp1_contract_matches_bars_every_day": true,
+   "tas_front_one_instrument_every_day": true,
+   "no_front_tas_trade_from_143001_to_1800": true,
+   "cl_mbp1_share_of_regular_days >= 0.98": true,
+   "tas_front_share_of_regular_days >= 0.95": true,
+   "rb_exact_bars_share_of_regular_days >= 0.95": true,
+   "ho_exact_bars_share_of_regular_days >= 0.95": true,
+   "bz_signal_prices_share_of_regular_days >= 0.95": true,
+   "all_ok": true
+  }
+ },
+ "seconds": 80
+}

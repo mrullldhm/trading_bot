@@ -1,0 +1,57 @@
+variant,item,own,claude,difference_own_minus_claude,tolerance,within_tolerance
+v1_tas_residual,entry_time_eligible_days,480,,,not reported,N/A
+v1_tas_residual,emitted_signals,107,107,0.0,1%,yes
+v1_tas_residual,evaluated_trades,107,107,0.0,1%,yes
+v1_tas_residual,gross_mean_ticks,-1.92523364486,-1.9252,-3.364486000001499e-05,0.1 tick,yes
+v1_tas_residual,sample_sd_ticks,18.7615126591,18.762,-0.00048734090000124297,0.1 tick,yes
+v1_tas_residual,one_sided_t,-1.06146940475,-1.0615,3.059525000015384e-05,0.01,yes
+v1_tas_residual,gross_mean_2015,-2.91489361702,-2.9149,6.3829799996639736e-06,0.1 tick,yes
+v1_tas_residual,gross_mean_2016,-1.15,-1.15,0.0,0.1 tick,yes
+v1_tas_residual,net_base_ticks,-4.32723364486,-4.3272,-3.364485999934885e-05,0.1 tick,yes
+v1_tas_residual,net_stress_ticks,-6.32723364486,-6.3272,-3.364485999934885e-05,0.1 tick,yes
+v1_tas_residual,trades_per_year,53.6100823045,53.61,8.230449999757639e-05,1%,yes
+v1_tas_residual,MDE_net_ticks,3.63031896538,3.6303,1.896537999979131e-05,0.1 tick,yes
+v1_tas_residual,largest_single_day_share,-0.330097087379,,,not reported,N/A
+v1_tas_residual,stage1_screen_pass,False,False,False,exact,yes
+v2_tas_unwind,entry_time_eligible_days,480,,,not reported,N/A
+v2_tas_unwind,emitted_signals,107,107,0.0,1%,yes
+v2_tas_unwind,evaluated_trades,107,107,0.0,1%,yes
+v2_tas_unwind,gross_mean_ticks,-1.78504672897,-1.785,-4.672897000013165e-05,0.1 tick,yes
+v2_tas_unwind,sample_sd_ticks,13.8822732339,13.882,0.00027323389999978076,0.1 tick,yes
+v2_tas_unwind,one_sided_t,-1.33008957753,-1.3301,1.0422470000159834e-05,0.01,yes
+v2_tas_unwind,gross_mean_2015,-3.6170212766,-3.617,-2.127660000006415e-05,0.1 tick,yes
+v2_tas_unwind,gross_mean_2016,-0.35,-0.35,0.0,0.1 tick,yes
+v2_tas_unwind,net_base_ticks,-4.18704672897,-4.187,-4.672897000013165e-05,0.1 tick,yes
+v2_tas_unwind,net_stress_ticks,-6.18704672897,-6.187,-4.672897000013165e-05,0.1 tick,yes
+v2_tas_unwind,trades_per_year,53.6100823045,53.61,8.230449999757639e-05,1%,yes
+v2_tas_unwind,MDE_net_ticks,2.68619490972,2.6862,-5.0902799997309955e-06,0.1 tick,yes
+v2_tas_unwind,largest_single_day_share,-0.162303664921,,,not reported,N/A
+v2_tas_unwind,stage1_screen_pass,False,False,False,exact,yes
+v3_outright_residual,entry_time_eligible_days,499,,,not reported,N/A
+v3_outright_residual,emitted_signals,110,110,0.0,1%,yes
+v3_outright_residual,evaluated_trades,110,110,0.0,1%,yes
+v3_outright_residual,gross_mean_ticks,0.472727272727,0.47273,-2.727272999991648e-06,0.1 tick,yes
+v3_outright_residual,sample_sd_ticks,17.567019292,17.567,1.9292000001058796e-05,0.1 tick,yes
+v3_outright_residual,one_sided_t,0.282233734799,0.28223,3.7347990000102804e-06,0.01,yes
+v3_outright_residual,gross_mean_2015,-0.854166666667,-0.85417,3.3333329999551964e-06,0.1 tick,yes
+v3_outright_residual,gross_mean_2016,1.5,1.5,0.0,0.1 tick,yes
+v3_outright_residual,net_base_ticks,-1.92927272727,-1.9293,2.727272999991648e-05,0.1 tick,yes
+v3_outright_residual,net_stress_ticks,-3.92927272727,-3.9293,2.7272730000138523e-05,0.1 tick,yes
+v3_outright_residual,trades_per_year,55.1131687243,55.113,0.0001687243000034755,1%,yes
+v3_outright_residual,MDE_net_ticks,3.35251367682,3.3525,1.3676820000085854e-05,0.1 tick,yes
+v3_outright_residual,largest_single_day_share,0.846153846154,0.84615,3.8461540000644945e-06,0.001,yes
+v3_outright_residual,stage1_screen_pass,False,False,False,exact,yes
+v4_outright_unwind,entry_time_eligible_days,499,,,not reported,N/A
+v4_outright_unwind,emitted_signals,103,103,0.0,1%,yes
+v4_outright_unwind,evaluated_trades,103,103,0.0,1%,yes
+v4_outright_unwind,gross_mean_ticks,-3.59223300971,-3.5922,-3.300971000008701e-05,0.1 tick,yes
+v4_outright_unwind,sample_sd_ticks,10.4819517091,10.482,-4.829089999880409e-05,0.1 tick,yes
+v4_outright_unwind,one_sided_t,-3.47809113264,-3.4781,8.867360000053282e-06,0.01,yes
+v4_outright_unwind,gross_mean_2015,-3.025,-3.025,0.0,0.1 tick,yes
+v4_outright_unwind,gross_mean_2016,-3.95238095238,-3.9524,1.904761999993454e-05,0.1 tick,yes
+v4_outright_unwind,net_base_ticks,-5.99423300971,-5.9942,-3.300971000008701e-05,0.1 tick,yes
+v4_outright_unwind,net_stress_ticks,-7.99423300971,-7.9942,-3.300971000008701e-05,0.1 tick,yes
+v4_outright_unwind,trades_per_year,51.6059670782,51.606,-3.2921799999030554e-05,1%,yes
+v4_outright_unwind,MDE_net_ticks,2.0672469736,2.0672,4.6973599999944327e-05,0.1 tick,yes
+v4_outright_unwind,largest_single_day_share,-0.0594594594595,,,not reported,N/A
+v4_outright_unwind,stage1_screen_pass,False,False,False,exact,yes

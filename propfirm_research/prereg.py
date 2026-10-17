@@ -6,6 +6,8 @@ with open_run(prereg_path) as run:                 creates <period>_opened.json 
     data.load_front(..., run=run)                  BEFORE any data is read; the RunToken is the only key
                                                    to that period, is bound to the prereg's item / period,
                                                    and is revoked when the block ends. A second open refuses.
+                                                   Loaders read only files whose hash is frozen here
+                                                   (`data_files_sha256`, R012 Q4.4).
 """
 
 import importlib.metadata as md
@@ -73,12 +75,17 @@ def register(item_dir: Path, spec: dict, code_files, data_files) -> Path:
     if path.exists():
         raise PreregError(f"{path} already exists: a pre-registration is never rewritten")
     validate(spec, item_dir)
+    code_files, data_files = [Path(f) for f in code_files], [Path(f) for f in data_files]  # read twice below
     if not code_files or not data_files:
         raise PreregError("code_files and data_files are required (their hashes are frozen)")
     full = dict(spec)
     full["registered_utc"] = datetime.now(timezone.utc).isoformat()
     full["code_sha256"] = ledger.sha256_files(code_files)
     full["data_sha256"] = ledger.sha256_files(data_files)
+    # per-file hashes: the loaders refuse any protected-period file not listed here with this content (R012 Q4.4)
+    from .data import file_key
+    full["data_files_sha256"] = {file_key(f): ledger.sha256_file(f) for f in data_files}
+    full["code_files_sha256"] = {file_key(f): ledger.sha256_file(f) for f in code_files}
     full["environment"] = {"python": platform.python_version(),
                            **{p: md.version(p) for p in PACKAGES}}
     item_dir.mkdir(parents=True, exist_ok=True)
@@ -99,6 +106,22 @@ def load(prereg_path: Path) -> tuple[dict, str]:
     return json.loads(prereg_path.read_text()), sha
 
 
+def check_data_files(spec: dict) -> None:
+    """Every registered data and code file still exists with its frozen hash (R012 Q4.4, R017)."""
+    from .data import paths as data_paths
+    for kind in ("data", "code"):
+        files = spec.get(f"{kind}_files_sha256") or {}
+        if not files:
+            raise PreregError(f"the pre-registration lists no per-file {kind} hashes")
+        changed = []
+        for key, h in files.items():
+            path = Path(key) if Path(key).is_absolute() else data_paths.ROOT / key
+            if not path.exists() or ledger.sha256_file(path) != h:
+                changed.append(key)
+        if changed:
+            raise PreregError(f"registered {kind} files missing or changed: {changed[:3]}")
+
+
 @dataclass(eq=False)
 class RunToken:
     """Key to one protected period for one pre-registered run. Only `open_run` creates live tokens."""
@@ -107,6 +130,7 @@ class RunToken:
     prereg_sha256: str
     _secret: str = field(repr=False, default="")
     _live: bool = field(repr=False, default=False)
+    data_files: dict = field(repr=False, default_factory=dict)  # file key -> sha256 frozen in the prereg
 
 
 _LIVE: dict[int, str] = {}  # id(token) -> secret; tokens not in here (or revoked) are refused
@@ -121,6 +145,7 @@ def open_run(prereg_path: Path):
     spec, sha = load(prereg_path)
     period = spec["period"]
     validate(spec, Path(prereg_path).parent)
+    check_data_files(spec)  # before the one-shot marker: a mismatch must not spend the run
     marker = Path(prereg_path).parent / f"{period}_opened.json"
     try:
         fd = os.open(marker, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -128,7 +153,8 @@ def open_run(prereg_path: Path):
         raise PreregError(f"{marker} exists: this test already ran (one run, never re-run)") from None
     with os.fdopen(fd, "w") as f:
         json.dump({"opened_utc": datetime.now(timezone.utc).isoformat(), "prereg_sha256": sha}, f)
-    token = RunToken(spec["item_id"], period, sha, secrets.token_hex(16), True)
+    token = RunToken(spec["item_id"], period, sha, secrets.token_hex(16), True,
+                     dict(spec.get("data_files_sha256") or {}))
     _LIVE[id(token)] = token._secret
     ledger.append(spec["item_id"], "access", period, prereg_sha256=sha, note="period opened")
     try:

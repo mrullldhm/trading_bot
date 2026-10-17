@@ -106,7 +106,8 @@ reasoning, the decisions and small result tables, and is meant to be committed t
 | [D007](decisions/D007-scikit-learn.md) | scikit-learn 1.9.1 added (pinned) for S003 |
 | [D008](decisions/D008-direction-after-s003.md) | After S003: staged settlement-flow data track (new information about settlement flow, 2015-16 first) |
 | [D009](decisions/D009-strict-exit.md) | Strict exits: never fill after the exit minute; a missing exact exit bar skips the window |
-| [D010](decisions/D010-stage1-data-purchase.md) | Stage-1 purchase approved: TAS, signed flow, settlement stats, RB/HO/BZ bars for 2015-16, cap $15 |
+| [D010](decisions/D010-stage1-data-purchase.md) | Stage-1 purchase approved: TAS, signed flow, settlement stats, RB/HO/BZ bars for 2015-16, cap $15 (addendum: line 6 chosen after the sample) |
+| [D011](decisions/D011-direction-after-stage1.md) | After stage 1 found nothing: **programme paused**; a restart needs a new decision record |
 
 The founding plan is [decisions/D000-charter.md](decisions/D000-charter.md).
 

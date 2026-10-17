@@ -1,0 +1,4 @@
+variant,in_family,emitted,unevaluable,n,trades_per_year,gross,sd,t,p_one,net_base,net_stress,sharpe_net_base_ann,gross_2015-16,n_2015-16,mde_net_validation,stress_ok,power_ok,inconclusive,q,q_ok,promote,gross_2015,gross_2016,max_day_share,years_ok,trades_ok,day_share_ok,stage1_pass,item
+v1_products,True,478,3,475,237.99,-0.26737,18.797,-0.31,0.62165,-2.6694,-4.6694,-2.1613,-0.26737,475,1.7263,False,False,False,0.68824,False,False,-1.4956,0.84739,,False,True,False,False,H028
+v2_brent,True,465,3,462,231.48,-0.041126,18.915,-0.046733,0.51863,-2.4431,-4.4431,-1.9387,-0.041126,462,1.7614,False,False,False,0.68824,False,False,-0.87387,0.72917,,False,True,False,False,H028
+v3_agreement,True,250,1,249,124.76,-0.65462,21.017,-0.49149,0.68824,-3.0566,-5.0566,-1.5967,-0.65462,249,2.6658,False,False,False,0.68824,False,False,-2.5682,1.5043,,False,True,False,False,H028
